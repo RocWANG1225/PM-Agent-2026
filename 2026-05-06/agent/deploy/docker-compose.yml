@@ -1,0 +1,12 @@
+services:
+  pm-agent-platform:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    ports:
+      - "4173:4173"
+    volumes:
+      - ../data:/app/data
+      - ../input.pptx:/app/input.pptx:ro
+    environment:
+      - PORT=4173

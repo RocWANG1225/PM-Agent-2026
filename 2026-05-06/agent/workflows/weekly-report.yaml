@@ -1,0 +1,12 @@
+name: weekly-report
+description: 从本地 PPT 中提取当周包含“议题”的页面，生成老板版项目周报。
+required_inputs:
+  - pptxFile
+  - startDate
+  - endDate
+safety:
+  - 只读取本地文件
+  - 不写入第三方系统
+outputs:
+  - markdown report
+  - source slide references

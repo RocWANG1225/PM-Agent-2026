@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>项目管理 Agent 本地化平台</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <aside class="sidebar">
+      <div class="brand">
+        <span class="mark">PM</span>
+        <div>
+          <strong>项目管理 Agent</strong>
+          <small>本地化 MVP</small>
+        </div>
+      </div>
+      <nav>
+        <a href="#weekly" class="active">周报助手</a>
+        <a href="#automation">创建 ONES 工作项</a>
+        <a href="#ones">ONES 工作项迁移</a>
+      </nav>
+    </aside>
+
+    <main>
+      <header class="topbar">
+        <div>
+          <h1>项目管理 Agent 本地化平台</h1>
+          <p>默认只读分析，涉及工作项移动前必须人工确认。</p>
+        </div>
+        <div class="userbar">
+          <span class="status" id="currentUser">本地运行</span>
+          <button type="button" class="secondary-button" id="logoutButton">退出</button>
+        </div>
+      </header>
+
+      <section id="weekly" class="panel">
+        <div class="section-head">
+          <div>
+            <h2>周报助手</h2>
+            <p>选择本地 PPT/PDF，按开始和截止日期筛选包含“议题”的页面，生成老板版周报草稿。</p>
+          </div>
+        </div>
+        <form id="weeklyForm" class="grid-form">
+          <label>
+            PPT 或 PDF 文件
+            <input name="sourceFile" type="file" accept=".pptx,.pdf,application/pdf,application/vnd.openxmlformats-officedocument.presentationml.presentation" />
+          </label>
+          <label>
+            或填写文件路径
+            <input name="pptxPath" placeholder="/Users/wangpeng5/Desktop/20260507-Neusphere internal meeting.pptx" />
+          </label>
+          <label>
+            开始日期
+            <input name="startDate" type="date" value="2026-05-04" />
+          </label>
+          <label>
+            截止日期
+            <input name="endDate" type="date" value="2026-05-10" />
+          </label>
+          <button type="submit">生成周报</button>
+        </form>
+        <pre id="weeklyOutput" class="output">等待生成。</pre>
+      </section>
+
+      <section id="automation" class="panel">
+        <div class="section-head">
+          <div>
+            <h2>创建 ONES 工作项清单</h2>
+            <p>从固定目录选择需求表，填写 ONES 目标迭代，生成批量导入前的运行计划。</p>
+          </div>
+          <span class="badge">需确认</span>
+        </div>
+        <form id="automationForm" class="grid-form">
+          <label>
+            需求表格
+            <select name="spreadsheetPath" id="spreadsheetSelect"></select>
+          </label>
+          <label>
+            ONES 目标迭代版本号
+            <input name="targetIteration" placeholder="例如：Vision Claw_V0.3(TBD)" />
+          </label>
+          <label>
+            负责人邮箱
+            <input name="assignee" value="wangpeng5@tetras.ai" />
+          </label>
+          <button type="button" id="refreshSpreadsheets">刷新表格</button>
+          <div class="wide rule-board">
+            <h3>固定执行规则</h3>
+            <ul>
+              <li>只允许从 <code>/Users/wangpeng5/Downloads/Codex Materials/</code> 选择表格。</li>
+              <li>读取工作簿中的 <code>需求汇总</code> sheet，并用 <code>v0.2</code> sheet 做重复排除。</li>
+              <li>先排除 <code>状态=已实现</code>，再排除 v0.2 已存在项，最后排除目标迭代中已存在相同需求内容的项。</li>
+              <li>新建标题格式固定为 <code>【优先级】需求分类_具体需求内容</code>。</li>
+              <li>优先使用 ONES 批量导入；点击“开始导入”前必须人工确认。</li>
+            </ul>
+          </div>
+          <label class="wide">
+            目标迭代已有工作项（可选，用于导入前去重）
+            <textarea name="targetExistingItemsText" placeholder="从 ONES 目标迭代中复制已有需求标题或具体需求内容；每行一条。"></textarea>
+          </label>
+          <button type="submit">生成运行计划</button>
+        </form>
+        <pre id="automationOutput" class="output">等待保存。</pre>
+      </section>
+
+      <section id="ones" class="panel">
+        <div class="section-head">
+          <div>
+            <h2>ONES 工作项迁移</h2>
+            <p>输入当前迭代、目标迭代和筛选规则，粘贴工作项列表后生成建议移动清单。</p>
+          </div>
+          <span class="badge">只读</span>
+        </div>
+        <form id="onesForm" class="grid-form">
+          <label>
+            当前迭代名称
+            <input name="currentSprint" placeholder="例如：Vision Claw_V0.2" />
+          </label>
+          <label>
+            要移去的迭代名称
+            <input name="targetSprint" placeholder="例如：Vision Claw_V0.3(TBD)" />
+          </label>
+          <label class="wide">
+            ONES 迭代链接
+            <input name="onesUrl" placeholder="https://ones.ainewera.com/project/#/team/..." />
+          </label>
+          <label class="wide">
+            筛选规则
+            <input name="rule" placeholder="例如：提测时间不等于2026-05-13，状态为未开始，排除已实现和实现中" />
+          </label>
+          <label class="wide">
+            工作项列表
+            <textarea name="itemsText" placeholder="#969921	[P0]核心模型能力拓展_human reid pipeline （1：1比对）	最高	未开始	未设置"></textarea>
+          </label>
+          <button type="submit">生成建议清单</button>
+        </form>
+        <div id="onesOutput" class="table-wrap">等待分析。</div>
+      </section>
+    </main>
+
+    <script src="/app.js"></script>
+  </body>
+</html>

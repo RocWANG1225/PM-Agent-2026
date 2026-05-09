@@ -1,0 +1,13 @@
+{
+  "name": "pm-agent-platform",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local project-management agent MVP for weekly reports and ONES sprint migration analysis.",
+  "scripts": {
+    "start": "node apps/api/server.js",
+    "dev": "node --watch --watch-preserve-output --watch-path=apps --watch-path=scripts --watch-path=templates apps/api/server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
