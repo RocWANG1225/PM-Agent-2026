@@ -42,22 +42,31 @@
           </div>
         </div>
         <form id="weeklyForm" class="grid-form">
-          <label>
+          <label class="wide">
             PPT 或 PDF 文件
             <input name="sourceFile" type="file" accept=".pptx,.pdf,application/pdf,application/vnd.openxmlformats-officedocument.presentationml.presentation" />
           </label>
           <label>
-            或填写文件路径
-            <input name="pptxPath" placeholder="/Users/wangpeng5/Desktop/20260507-Neusphere internal meeting.pptx" />
-          </label>
-          <label>
             开始日期
-            <input name="startDate" type="date" value="2026-05-04" />
+            <input name="startDate" type="date" />
           </label>
           <label>
             截止日期
-            <input name="endDate" type="date" value="2026-05-10" />
+            <input name="endDate" type="date" />
           </label>
+          <label class="wide">
+            固定运行规则
+            <textarea name="weeklyRules" class="rules-input">1. 只筛选文本中包含“议题”的页面。
+2. 页面中出现的开始日期=“系统当前日期的上一个周五”。
+3. 页面中出现的截止日期=“系统当前日期的本周四”。
+4. 开始日期和截止日期保持可手动选择状态。
+5. 生成老板版周报草稿，并输出 Word 文件。
+6. 全程只在本地生成文件，不写入第三方系统。</textarea>
+          </label>
+          <div class="wide action-row">
+            <button type="button" class="secondary-button" id="saveWeeklyRules">保存</button>
+            <span class="inline-status" id="weeklyRulesStatus">当前使用已保存规则。</span>
+          </div>
           <button type="submit">生成周报</button>
         </form>
         <pre id="weeklyOutput" class="output">等待生成。</pre>
@@ -77,7 +86,7 @@
             <select name="spreadsheetPath" id="spreadsheetSelect"></select>
           </label>
           <label>
-            ONES 目标迭代版本号
+            ONES 目标迭代实际显示名称
             <input name="targetIteration" placeholder="例如：Vision Claw_V0.3(TBD)" />
           </label>
           <label>
@@ -90,11 +99,15 @@
             <ul>
               <li>只允许从 <code>/Users/wangpeng5/Downloads/Codex Materials/</code> 选择表格。</li>
               <li>读取工作簿中的 <code>需求汇总</code> sheet，并用 <code>v0.2</code> sheet 做重复排除。</li>
-              <li>先排除 <code>状态=已实现</code>，再排除 v0.2 已存在项，最后排除目标迭代中已存在相同需求内容的项。</li>
-              <li>新建标题格式固定为 <code>【优先级】需求分类_具体需求内容</code>。</li>
+              <li>先排除 <code>状态=已实现</code>，再排除 v0.2 已存在项；如已粘贴目标迭代已有工作项，再按相同需求内容去重。</li>
+              <li>新建标题格式固定为 <code>【优先级】需求分类_具体需求内容</code>，标题中的换行会压成空格。</li>
               <li>优先使用 ONES 批量导入；点击“开始导入”前必须人工确认。</li>
             </ul>
           </div>
+          <label class="wide checkbox-row">
+            <input type="checkbox" name="iterationNameConfirmed" value="yes" />
+            我已在 ONES 页面确认目标迭代的实际显示名称，CSV 可使用该名称。
+          </label>
           <label class="wide">
             目标迭代已有工作项（可选，用于导入前去重）
             <textarea name="targetExistingItemsText" placeholder="从 ONES 目标迭代中复制已有需求标题或具体需求内容；每行一条。"></textarea>

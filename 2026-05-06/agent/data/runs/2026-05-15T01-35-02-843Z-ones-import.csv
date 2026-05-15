@@ -1,0 +1,26 @@
+﻿标题,工作项类型,负责人,状态,所属项目,所属迭代,优先级
+【P1】输出能力_检测报告支持多种格式：pdf word ppt等,需求,wangpeng5@tetras.ai,未开始,Tetrasphere产品开发,v0.3,较高
+【P0】核心模型能力拓展_目标识别（RAM++）,需求,wangpeng5@tetras.ai,未开始,Tetrasphere产品开发,v0.3,最高
+【P0】核心模型能力拓展_分割（SAM3.1）,需求,wangpeng5@tetras.ai,未开始,Tetrasphere产品开发,v0.3,最高
+【P2】核心模型能力拓展_深度估计（DA3NESTED-GIANT-LARGE-1.1）,需求,wangpeng5@tetras.ai,未开始,Tetrasphere产品开发,v0.3,普通
+【P2】核心模型能力拓展_barcode 识别,需求,wangpeng5@tetras.ai,未开始,Tetrasphere产品开发,v0.3,普通
+【P2】核心模型能力拓展_qrcode 识别,需求,wangpeng5@tetras.ai,未开始,Tetrasphere产品开发,v0.3,普通
+【P2】核心模型能力拓展_car reid pipeline（1：1比对）,需求,wangpeng5@tetras.ai,未开始,Tetrasphere产品开发,v0.3,普通
+【P2】核心模型能力拓展_InternDET COCO-80类检测大模型,需求,wangpeng5@tetras.ai,未开始,Tetrasphere产品开发,v0.3,普通
+【P1】核心模型能力拓展_车辆综合分析API 包括：车检测、车牌检测、车牌关键点、OCR,需求,wangpeng5@tetras.ai,未开始,Tetrasphere产品开发,v0.3,较高
+【P2】核心模型能力拓展_行业专项检测模型 跌倒、烟火、宠物等,需求,wangpeng5@tetras.ai,未开始,Tetrasphere产品开发,v0.3,普通
+【P3】核心模型能力拓展_3D视觉感知 (包括点云类）,需求,wangpeng5@tetras.ai,未开始,Tetrasphere产品开发,v0.3,较低
+【P2】产品核心能力模块_网络搜索（数据，模型）,需求,wangpeng5@tetras.ai,未开始,Tetrasphere产品开发,v0.3,普通
+【P1】产品核心能力模块_文档上传与理解,需求,wangpeng5@tetras.ai,未开始,Tetrasphere产品开发,v0.3,较高
+【P2】产品核心能力模块_小模型训练功能,需求,wangpeng5@tetras.ai,未开始,Tetrasphere产品开发,v0.3,普通
+【P2】产品核心能力模块_模型输出,需求,wangpeng5@tetras.ai,未开始,Tetrasphere产品开发,v0.3,普通
+【P2】产品核心能力模块_标注工具模块,需求,wangpeng5@tetras.ai,未开始,Tetrasphere产品开发,v0.3,普通
+【P0】产品核心能力模块_AI思考过程完整可视化展示,需求,wangpeng5@tetras.ai,未开始,Tetrasphere产品开发,v0.3,最高
+【P1】产品核心能力模块_思考过程抽象精简、轻量化展示,需求,wangpeng5@tetras.ai,未开始,Tetrasphere产品开发,v0.3,较高
+【P2】产品核心能力模块_任务产物自动汇总整合模块,需求,wangpeng5@tetras.ai,未开始,Tetrasphere产品开发,v0.3,普通
+【P0】现有问题修复_需求理解偏差、输出物判断错误修复,需求,wangpeng5@tetras.ai,未开始,Tetrasphere产品开发,v0.3,最高
+【P1】现有问题修复_整体响应耗时、运行性能优化,需求,wangpeng5@tetras.ai,未开始,Tetrasphere产品开发,v0.3,较高
+【P0】现有问题修复_降低任务中断、任务失败概率,需求,wangpeng5@tetras.ai,未开始,Tetrasphere产品开发,v0.3,最高
+【P2】现有问题修复_下调不合理的超高数据量要求（模型训练相关）,需求,wangpeng5@tetras.ai,未开始,Tetrasphere产品开发,v0.3,普通
+【P0】现有问题修复_修复多会话隔离失效问题,需求,wangpeng5@tetras.ai,未开始,Tetrasphere产品开发,v0.3,最高
+【P1】现有问题修复_任务失败/中断后，页面提示文案&样式优化,需求,wangpeng5@tetras.ai,未开始,Tetrasphere产品开发,v0.3,较高

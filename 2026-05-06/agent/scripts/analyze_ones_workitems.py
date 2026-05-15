@@ -22,6 +22,10 @@ def first_line(value):
     return lines[0].strip() if lines else ""
 
 
+def compact_text(value):
+    return re.sub(r"\s+", " ", str(value or "").strip())
+
+
 def header_map(ws):
     headers = {}
     for idx, value in enumerate(next(ws.iter_rows(min_row=1, max_row=1, values_only=True)), start=1):
@@ -67,7 +71,8 @@ def analyze(payload):
     workbook = payload["spreadsheetPath"]
     target_iteration = payload["targetIteration"]
     assignee = payload.get("assignee") or "wangpeng5@tetras.ai"
-    existing_target = parse_existing_text(payload.get("targetExistingItemsText"))
+    existing_target_text = payload.get("targetExistingItemsText")
+    existing_target = parse_existing_text(existing_target_text)
 
     wb = load_workbook(workbook, data_only=True)
     ws = wb["需求汇总"]
@@ -94,13 +99,14 @@ def analyze(payload):
             continue
 
         key = normalize(content)
+        title_content = compact_text(content)
         item = {
             "row": row_number,
             "category": category,
             "content": str(content).strip(),
             "priority": priority,
             "status": status or "",
-            "title": f"【{priority}】{category}_{str(content).strip()}",
+            "title": f"【{priority}】{category}_{title_content}",
         }
 
         if status == "已实现":
@@ -131,6 +137,8 @@ def analyze(payload):
         "totalValidSourceRows": len(valid) + len(excluded),
         "pendingCreateCount": len(valid),
         "excludedCount": len(excluded),
+        "targetExistingItemsProvided": bool(str(existing_target_text or "").strip()),
+        "targetExistingItemsCount": len(existing_target),
         "pending": valid,
         "excluded": excluded,
         "importRows": import_rows,

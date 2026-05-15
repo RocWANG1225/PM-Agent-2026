@@ -14,7 +14,8 @@ candidate_rules:
 exclusion_rules:
   - 排除状态=已实现
   - 排除 v0.2 已存在需求
-  - 排除目标 ONES 迭代已存在相同具体需求内容的需求
+  - 如果已提供目标 ONES 迭代已有工作项，则排除相同具体需求内容的需求
+  - 生成 CSV 前必须确认目标迭代实际显示名称
 import_fields:
   issue_type: 需求
   assignee: wangpeng5@tetras.ai

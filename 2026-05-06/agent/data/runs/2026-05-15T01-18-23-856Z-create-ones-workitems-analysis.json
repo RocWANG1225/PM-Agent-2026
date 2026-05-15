@@ -1,0 +1,607 @@
+{
+  "totalValidSourceRows": 44,
+  "pendingCreateCount": 25,
+  "excludedCount": 19,
+  "pending": [
+    {
+      "row": 7,
+      "category": "输出能力",
+      "content": "检测报告支持多种格式：pdf word ppt等",
+      "priority": "P1",
+      "status": "",
+      "title": "【P1】输出能力_检测报告支持多种格式：pdf word ppt等"
+    },
+    {
+      "row": 10,
+      "category": "核心模型能力拓展",
+      "content": "目标识别（RAM++）",
+      "priority": "P0",
+      "status": "",
+      "title": "【P0】核心模型能力拓展_目标识别（RAM++）"
+    },
+    {
+      "row": 12,
+      "category": "核心模型能力拓展",
+      "content": "分割（SAM3.1）",
+      "priority": "P0",
+      "status": "需改造",
+      "title": "【P0】核心模型能力拓展_分割（SAM3.1）"
+    },
+    {
+      "row": 13,
+      "category": "核心模型能力拓展",
+      "content": "深度估计（DA3NESTED-GIANT-LARGE-1.1）",
+      "priority": "P2",
+      "status": "",
+      "title": "【P2】核心模型能力拓展_深度估计（DA3NESTED-GIANT-LARGE-1.1）"
+    },
+    {
+      "row": 17,
+      "category": "核心模型能力拓展",
+      "content": "barcode 识别",
+      "priority": "P2",
+      "status": "",
+      "title": "【P2】核心模型能力拓展_barcode 识别"
+    },
+    {
+      "row": 18,
+      "category": "核心模型能力拓展",
+      "content": "qrcode 识别",
+      "priority": "P2",
+      "status": "",
+      "title": "【P2】核心模型能力拓展_qrcode 识别"
+    },
+    {
+      "row": 23,
+      "category": "核心模型能力拓展",
+      "content": "car reid pipeline（1：1比对）",
+      "priority": "P2",
+      "status": "",
+      "title": "【P2】核心模型能力拓展_car reid pipeline（1：1比对）"
+    },
+    {
+      "row": 24,
+      "category": "核心模型能力拓展",
+      "content": "InternDET \nCOCO-80类检测大模型",
+      "priority": "P2",
+      "status": "",
+      "title": "【P2】核心模型能力拓展_InternDET \nCOCO-80类检测大模型"
+    },
+    {
+      "row": 25,
+      "category": "核心模型能力拓展",
+      "content": "车辆综合分析API\n包括：车检测、车牌检测、车牌关键点、OCR",
+      "priority": "P1",
+      "status": "",
+      "title": "【P1】核心模型能力拓展_车辆综合分析API\n包括：车检测、车牌检测、车牌关键点、OCR"
+    },
+    {
+      "row": 27,
+      "category": "核心模型能力拓展",
+      "content": "行业专项检测模型  跌倒、烟火、宠物等",
+      "priority": "P2",
+      "status": "",
+      "title": "【P2】核心模型能力拓展_行业专项检测模型  跌倒、烟火、宠物等"
+    },
+    {
+      "row": 28,
+      "category": "核心模型能力拓展",
+      "content": "3D视觉感知 (包括点云类）",
+      "priority": "P3",
+      "status": "",
+      "title": "【P3】核心模型能力拓展_3D视觉感知 (包括点云类）"
+    },
+    {
+      "row": 32,
+      "category": "产品核心能力模块",
+      "content": "网络搜索（数据，模型）",
+      "priority": "P2",
+      "status": "",
+      "title": "【P2】产品核心能力模块_网络搜索（数据，模型）"
+    },
+    {
+      "row": 33,
+      "category": "产品核心能力模块",
+      "content": "文档上传与理解",
+      "priority": "P1",
+      "status": "",
+      "title": "【P1】产品核心能力模块_文档上传与理解"
+    },
+    {
+      "row": 34,
+      "category": "产品核心能力模块",
+      "content": "小模型训练功能",
+      "priority": "P2",
+      "status": "",
+      "title": "【P2】产品核心能力模块_小模型训练功能"
+    },
+    {
+      "row": 35,
+      "category": "产品核心能力模块",
+      "content": "模型输出",
+      "priority": "P2",
+      "status": "",
+      "title": "【P2】产品核心能力模块_模型输出"
+    },
+    {
+      "row": 36,
+      "category": "产品核心能力模块",
+      "content": "标注工具模块",
+      "priority": "P2",
+      "status": "",
+      "title": "【P2】产品核心能力模块_标注工具模块"
+    },
+    {
+      "row": 37,
+      "category": "产品核心能力模块",
+      "content": "AI思考过程完整可视化展示",
+      "priority": "P0",
+      "status": "",
+      "title": "【P0】产品核心能力模块_AI思考过程完整可视化展示"
+    },
+    {
+      "row": 38,
+      "category": "产品核心能力模块",
+      "content": "思考过程抽象精简、轻量化展示",
+      "priority": "P1",
+      "status": "",
+      "title": "【P1】产品核心能力模块_思考过程抽象精简、轻量化展示"
+    },
+    {
+      "row": 39,
+      "category": "产品核心能力模块",
+      "content": "任务产物自动汇总整合模块",
+      "priority": "P2",
+      "status": "",
+      "title": "【P2】产品核心能力模块_任务产物自动汇总整合模块"
+    },
+    {
+      "row": 40,
+      "category": "现有问题修复",
+      "content": "需求理解偏差、输出物判断错误修复",
+      "priority": "P0",
+      "status": "",
+      "title": "【P0】现有问题修复_需求理解偏差、输出物判断错误修复"
+    },
+    {
+      "row": 41,
+      "category": "现有问题修复",
+      "content": "整体响应耗时、运行性能优化",
+      "priority": "P1",
+      "status": "",
+      "title": "【P1】现有问题修复_整体响应耗时、运行性能优化"
+    },
+    {
+      "row": 43,
+      "category": "现有问题修复",
+      "content": "降低任务中断、任务失败概率",
+      "priority": "P0",
+      "status": "",
+      "title": "【P0】现有问题修复_降低任务中断、任务失败概率"
+    },
+    {
+      "row": 44,
+      "category": "现有问题修复",
+      "content": "下调不合理的超高数据量要求（模型训练相关）",
+      "priority": "P2",
+      "status": "",
+      "title": "【P2】现有问题修复_下调不合理的超高数据量要求（模型训练相关）"
+    },
+    {
+      "row": 45,
+      "category": "现有问题修复",
+      "content": "修复多会话隔离失效问题",
+      "priority": "P0",
+      "status": "",
+      "title": "【P0】现有问题修复_修复多会话隔离失效问题"
+    },
+    {
+      "row": 46,
+      "category": "现有问题修复",
+      "content": "任务失败/中断后，页面提示文案&样式优化",
+      "priority": "P1",
+      "status": "",
+      "title": "【P1】现有问题修复_任务失败/中断后，页面提示文案&样式优化"
+    }
+  ],
+  "excluded": [
+    {
+      "row": 2,
+      "category": "前后处理能力",
+      "content": "Counting计数统计（通用需求）",
+      "priority": "P0",
+      "status": "",
+      "title": "【P0】前后处理能力_Counting计数统计（通用需求）",
+      "reason": "已存在于 v0.2"
+    },
+    {
+      "row": 3,
+      "category": "前后处理能力",
+      "content": "距离测算计算（二机床需求）",
+      "priority": "P0",
+      "status": "",
+      "title": "【P0】前后处理能力_距离测算计算（二机床需求）",
+      "reason": "已存在于 v0.2"
+    },
+    {
+      "row": 4,
+      "category": "前后处理能力",
+      "content": "标准化SOP流程执行（必须有文本输入描述sop）",
+      "priority": "P0",
+      "status": "",
+      "title": "【P0】前后处理能力_标准化SOP流程执行（必须有文本输入描述sop）",
+      "reason": "已存在于 v0.2"
+    },
+    {
+      "row": 6,
+      "category": "输出能力",
+      "content": "检测报告生成与输出：md格式",
+      "priority": "P0",
+      "status": "已实现",
+      "title": "【P0】输出能力_检测报告生成与输出：md格式",
+      "reason": "状态=已实现"
+    },
+    {
+      "row": 8,
+      "category": "输出能力",
+      "content": "mask/bbox目标可视化渲染：jpg png格式",
+      "priority": "P0",
+      "status": "已实现",
+      "title": "【P0】输出能力_mask/bbox目标可视化渲染：jpg png格式",
+      "reason": "状态=已实现"
+    },
+    {
+      "row": 9,
+      "category": "输出能力",
+      "content": "tracking目标可视化渲染：mp4格式",
+      "priority": "P1",
+      "status": "",
+      "title": "【P1】输出能力_tracking目标可视化渲染：mp4格式",
+      "reason": "已存在于 v0.2"
+    },
+    {
+      "row": 11,
+      "category": "核心模型能力拓展",
+      "content": "检测（Doubao）",
+      "priority": "P0",
+      "status": "已实现",
+      "title": "【P0】核心模型能力拓展_检测（Doubao）",
+      "reason": "状态=已实现"
+    },
+    {
+      "row": 14,
+      "category": "核心模型能力拓展",
+      "content": "关键点检测（KptLLM++）",
+      "priority": "P0",
+      "status": "",
+      "title": "【P0】核心模型能力拓展_关键点检测（KptLLM++）",
+      "reason": "已存在于 v0.2"
+    },
+    {
+      "row": 15,
+      "category": "核心模型能力拓展",
+      "content": "图文比对(Doubao-VL-embedding)",
+      "priority": "P0",
+      "status": "",
+      "title": "【P0】核心模型能力拓展_图文比对(Doubao-VL-embedding)",
+      "reason": "已存在于 v0.2"
+    },
+    {
+      "row": 16,
+      "category": "核心模型能力拓展",
+      "content": "图图比对(Doubao-VL-embedding)",
+      "priority": "P0",
+      "status": "",
+      "title": "【P0】核心模型能力拓展_图图比对(Doubao-VL-embedding)",
+      "reason": "已存在于 v0.2"
+    },
+    {
+      "row": 19,
+      "category": "核心模型能力拓展",
+      "content": "图片描述（Doubao）",
+      "priority": "P0",
+      "status": "需改造",
+      "title": "【P0】核心模型能力拓展_图片描述（Doubao）",
+      "reason": "已存在于 v0.2"
+    },
+    {
+      "row": 20,
+      "category": "核心模型能力拓展",
+      "content": "视频描述（Doubao）",
+      "priority": "P0",
+      "status": "需改造",
+      "title": "【P0】核心模型能力拓展_视频描述（Doubao）",
+      "reason": "已存在于 v0.2"
+    },
+    {
+      "row": 21,
+      "category": "核心模型能力拓展",
+      "content": "人脸识别特征提取pipeline（1：1比对）",
+      "priority": "P0",
+      "status": "",
+      "title": "【P0】核心模型能力拓展_人脸识别特征提取pipeline（1：1比对）",
+      "reason": "已存在于 v0.2"
+    },
+    {
+      "row": 22,
+      "category": "核心模型能力拓展",
+      "content": "human reid pipeline （1：1比对）",
+      "priority": "P0",
+      "status": "",
+      "title": "【P0】核心模型能力拓展_human reid pipeline （1：1比对）",
+      "reason": "已存在于 v0.2"
+    },
+    {
+      "row": 26,
+      "category": "核心模型能力拓展",
+      "content": "人体综合分析API\n包括：人体/人脸/人头检测+人体关键点+性别+年龄+HeadPose",
+      "priority": "P1",
+      "status": "",
+      "title": "【P1】核心模型能力拓展_人体综合分析API\n包括：人体/人脸/人头检测+人体关键点+性别+年龄+HeadPose",
+      "reason": "已存在于 v0.2"
+    },
+    {
+      "row": 29,
+      "category": "产品核心能力模块",
+      "content": "chatbot页面，自然语言交互",
+      "priority": "P0",
+      "status": "已实现",
+      "title": "【P0】产品核心能力模块_chatbot页面，自然语言交互",
+      "reason": "状态=已实现"
+    },
+    {
+      "row": 30,
+      "category": "产品核心能力模块",
+      "content": "需求澄清与多轮对话",
+      "priority": "P0",
+      "status": "已实现",
+      "title": "【P0】产品核心能力模块_需求澄清与多轮对话",
+      "reason": "状态=已实现"
+    },
+    {
+      "row": 31,
+      "category": "产品核心能力模块",
+      "content": "图片 视频 压缩包上传",
+      "priority": "P0",
+      "status": "已实现",
+      "title": "【P0】产品核心能力模块_图片 视频 压缩包上传",
+      "reason": "状态=已实现"
+    },
+    {
+      "row": 42,
+      "category": "现有问题修复",
+      "content": "需可视化图片时，仅返回路径无渲染问题修复",
+      "priority": "P0",
+      "status": "",
+      "title": "【P0】现有问题修复_需可视化图片时，仅返回路径无渲染问题修复",
+      "reason": "已存在于 v0.2"
+    }
+  ],
+  "importRows": [
+    {
+      "标题": "【P1】输出能力_检测报告支持多种格式：pdf word ppt等",
+      "工作项类型": "需求",
+      "负责人": "wangpeng5@tetras.ai",
+      "状态": "未开始",
+      "所属项目": "Tetrasphere产品开发",
+      "所属迭代": "Vision Claw_V0.3(TBD)",
+      "优先级": "较高"
+    },
+    {
+      "标题": "【P0】核心模型能力拓展_目标识别（RAM++）",
+      "工作项类型": "需求",
+      "负责人": "wangpeng5@tetras.ai",
+      "状态": "未开始",
+      "所属项目": "Tetrasphere产品开发",
+      "所属迭代": "Vision Claw_V0.3(TBD)",
+      "优先级": "最高"
+    },
+    {
+      "标题": "【P0】核心模型能力拓展_分割（SAM3.1）",
+      "工作项类型": "需求",
+      "负责人": "wangpeng5@tetras.ai",
+      "状态": "未开始",
+      "所属项目": "Tetrasphere产品开发",
+      "所属迭代": "Vision Claw_V0.3(TBD)",
+      "优先级": "最高"
+    },
+    {
+      "标题": "【P2】核心模型能力拓展_深度估计（DA3NESTED-GIANT-LARGE-1.1）",
+      "工作项类型": "需求",
+      "负责人": "wangpeng5@tetras.ai",
+      "状态": "未开始",
+      "所属项目": "Tetrasphere产品开发",
+      "所属迭代": "Vision Claw_V0.3(TBD)",
+      "优先级": "普通"
+    },
+    {
+      "标题": "【P2】核心模型能力拓展_barcode 识别",
+      "工作项类型": "需求",
+      "负责人": "wangpeng5@tetras.ai",
+      "状态": "未开始",
+      "所属项目": "Tetrasphere产品开发",
+      "所属迭代": "Vision Claw_V0.3(TBD)",
+      "优先级": "普通"
+    },
+    {
+      "标题": "【P2】核心模型能力拓展_qrcode 识别",
+      "工作项类型": "需求",
+      "负责人": "wangpeng5@tetras.ai",
+      "状态": "未开始",
+      "所属项目": "Tetrasphere产品开发",
+      "所属迭代": "Vision Claw_V0.3(TBD)",
+      "优先级": "普通"
+    },
+    {
+      "标题": "【P2】核心模型能力拓展_car reid pipeline（1：1比对）",
+      "工作项类型": "需求",
+      "负责人": "wangpeng5@tetras.ai",
+      "状态": "未开始",
+      "所属项目": "Tetrasphere产品开发",
+      "所属迭代": "Vision Claw_V0.3(TBD)",
+      "优先级": "普通"
+    },
+    {
+      "标题": "【P2】核心模型能力拓展_InternDET \nCOCO-80类检测大模型",
+      "工作项类型": "需求",
+      "负责人": "wangpeng5@tetras.ai",
+      "状态": "未开始",
+      "所属项目": "Tetrasphere产品开发",
+      "所属迭代": "Vision Claw_V0.3(TBD)",
+      "优先级": "普通"
+    },
+    {
+      "标题": "【P1】核心模型能力拓展_车辆综合分析API\n包括：车检测、车牌检测、车牌关键点、OCR",
+      "工作项类型": "需求",
+      "负责人": "wangpeng5@tetras.ai",
+      "状态": "未开始",
+      "所属项目": "Tetrasphere产品开发",
+      "所属迭代": "Vision Claw_V0.3(TBD)",
+      "优先级": "较高"
+    },
+    {
+      "标题": "【P2】核心模型能力拓展_行业专项检测模型  跌倒、烟火、宠物等",
+      "工作项类型": "需求",
+      "负责人": "wangpeng5@tetras.ai",
+      "状态": "未开始",
+      "所属项目": "Tetrasphere产品开发",
+      "所属迭代": "Vision Claw_V0.3(TBD)",
+      "优先级": "普通"
+    },
+    {
+      "标题": "【P3】核心模型能力拓展_3D视觉感知 (包括点云类）",
+      "工作项类型": "需求",
+      "负责人": "wangpeng5@tetras.ai",
+      "状态": "未开始",
+      "所属项目": "Tetrasphere产品开发",
+      "所属迭代": "Vision Claw_V0.3(TBD)",
+      "优先级": "较低"
+    },
+    {
+      "标题": "【P2】产品核心能力模块_网络搜索（数据，模型）",
+      "工作项类型": "需求",
+      "负责人": "wangpeng5@tetras.ai",
+      "状态": "未开始",
+      "所属项目": "Tetrasphere产品开发",
+      "所属迭代": "Vision Claw_V0.3(TBD)",
+      "优先级": "普通"
+    },
+    {
+      "标题": "【P1】产品核心能力模块_文档上传与理解",
+      "工作项类型": "需求",
+      "负责人": "wangpeng5@tetras.ai",
+      "状态": "未开始",
+      "所属项目": "Tetrasphere产品开发",
+      "所属迭代": "Vision Claw_V0.3(TBD)",
+      "优先级": "较高"
+    },
+    {
+      "标题": "【P2】产品核心能力模块_小模型训练功能",
+      "工作项类型": "需求",
+      "负责人": "wangpeng5@tetras.ai",
+      "状态": "未开始",
+      "所属项目": "Tetrasphere产品开发",
+      "所属迭代": "Vision Claw_V0.3(TBD)",
+      "优先级": "普通"
+    },
+    {
+      "标题": "【P2】产品核心能力模块_模型输出",
+      "工作项类型": "需求",
+      "负责人": "wangpeng5@tetras.ai",
+      "状态": "未开始",
+      "所属项目": "Tetrasphere产品开发",
+      "所属迭代": "Vision Claw_V0.3(TBD)",
+      "优先级": "普通"
+    },
+    {
+      "标题": "【P2】产品核心能力模块_标注工具模块",
+      "工作项类型": "需求",
+      "负责人": "wangpeng5@tetras.ai",
+      "状态": "未开始",
+      "所属项目": "Tetrasphere产品开发",
+      "所属迭代": "Vision Claw_V0.3(TBD)",
+      "优先级": "普通"
+    },
+    {
+      "标题": "【P0】产品核心能力模块_AI思考过程完整可视化展示",
+      "工作项类型": "需求",
+      "负责人": "wangpeng5@tetras.ai",
+      "状态": "未开始",
+      "所属项目": "Tetrasphere产品开发",
+      "所属迭代": "Vision Claw_V0.3(TBD)",
+      "优先级": "最高"
+    },
+    {
+      "标题": "【P1】产品核心能力模块_思考过程抽象精简、轻量化展示",
+      "工作项类型": "需求",
+      "负责人": "wangpeng5@tetras.ai",
+      "状态": "未开始",
+      "所属项目": "Tetrasphere产品开发",
+      "所属迭代": "Vision Claw_V0.3(TBD)",
+      "优先级": "较高"
+    },
+    {
+      "标题": "【P2】产品核心能力模块_任务产物自动汇总整合模块",
+      "工作项类型": "需求",
+      "负责人": "wangpeng5@tetras.ai",
+      "状态": "未开始",
+      "所属项目": "Tetrasphere产品开发",
+      "所属迭代": "Vision Claw_V0.3(TBD)",
+      "优先级": "普通"
+    },
+    {
+      "标题": "【P0】现有问题修复_需求理解偏差、输出物判断错误修复",
+      "工作项类型": "需求",
+      "负责人": "wangpeng5@tetras.ai",
+      "状态": "未开始",
+      "所属项目": "Tetrasphere产品开发",
+      "所属迭代": "Vision Claw_V0.3(TBD)",
+      "优先级": "最高"
+    },
+    {
+      "标题": "【P1】现有问题修复_整体响应耗时、运行性能优化",
+      "工作项类型": "需求",
+      "负责人": "wangpeng5@tetras.ai",
+      "状态": "未开始",
+      "所属项目": "Tetrasphere产品开发",
+      "所属迭代": "Vision Claw_V0.3(TBD)",
+      "优先级": "较高"
+    },
+    {
+      "标题": "【P0】现有问题修复_降低任务中断、任务失败概率",
+      "工作项类型": "需求",
+      "负责人": "wangpeng5@tetras.ai",
+      "状态": "未开始",
+      "所属项目": "Tetrasphere产品开发",
+      "所属迭代": "Vision Claw_V0.3(TBD)",
+      "优先级": "最高"
+    },
+    {
+      "标题": "【P2】现有问题修复_下调不合理的超高数据量要求（模型训练相关）",
+      "工作项类型": "需求",
+      "负责人": "wangpeng5@tetras.ai",
+      "状态": "未开始",
+      "所属项目": "Tetrasphere产品开发",
+      "所属迭代": "Vision Claw_V0.3(TBD)",
+      "优先级": "普通"
+    },
+    {
+      "标题": "【P0】现有问题修复_修复多会话隔离失效问题",
+      "工作项类型": "需求",
+      "负责人": "wangpeng5@tetras.ai",
+      "状态": "未开始",
+      "所属项目": "Tetrasphere产品开发",
+      "所属迭代": "Vision Claw_V0.3(TBD)",
+      "优先级": "最高"
+    },
+    {
+      "标题": "【P1】现有问题修复_任务失败/中断后，页面提示文案&样式优化",
+      "工作项类型": "需求",
+      "负责人": "wangpeng5@tetras.ai",
+      "状态": "未开始",
+      "所属项目": "Tetrasphere产品开发",
+      "所属迭代": "Vision Claw_V0.3(TBD)",
+      "优先级": "较高"
+    }
+  ]
+}

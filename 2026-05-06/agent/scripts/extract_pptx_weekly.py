@@ -182,15 +182,16 @@ def summarize(text):
 
 
 def main():
-    if len(sys.argv) != 4:
-        raise SystemExit("Usage: extract_pptx_weekly.py <pptx> <week-start> <week-end>")
+    if len(sys.argv) not in (4, 5):
+        raise SystemExit("Usage: extract_pptx_weekly.py <pptx> <week-start> <week-end> [keyword]")
     pptx = Path(sys.argv[1])
     start = date.fromisoformat(sys.argv[2])
     end = date.fromisoformat(sys.argv[3])
+    keyword = sys.argv[4] if len(sys.argv) == 5 else "议题"
     selected = []
     for slide in extract_text(pptx):
         text = slide["text"]
-        if "议题" not in text:
+        if keyword not in text:
             continue
         found_dates = [parse_date(token) for token in re.findall(r"(?:20)?\d{2}[./年-]\d{1,2}[./月-]\d{1,2}|\d{1,2}[./月-]\d{1,2}", text)]
         found_dates = [item for item in found_dates if item]

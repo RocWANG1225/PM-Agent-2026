@@ -18,6 +18,12 @@ const PYTHON_BIN = process.env.PYTHON_BIN || "/Users/wangpeng5/.cache/codex-runt
 const AUTH_USER = process.env.PM_AGENT_USER || "wangpeng5";
 const AUTH_PASSWORD = process.env.PM_AGENT_PASSWORD || "pm-agent-2026";
 const SESSION_TTL_MS = 8 * 60 * 60 * 1000;
+const DEFAULT_WEEKLY_RULES = `1. 只筛选文本中包含“议题”的页面。
+2. 页面中出现的开始日期=“系统当前日期的上一个周五”。
+3. 页面中出现的截止日期=“系统当前日期的本周四”。
+4. 开始日期和截止日期保持可手动选择状态。
+5. 生成老板版周报草稿，并输出 Word 文件。
+6. 全程只在本地生成文件，不写入第三方系统。`;
 const sessions = new Map();
 const webauthnChallenges = new Map();
 
@@ -401,14 +407,18 @@ function resolveWeeklySource(input) {
     return file;
   }
 
-  const pptxPath = path.resolve(input.pptxPath || path.join(ROOT, "input.pptx"));
-  if (!fs.existsSync(pptxPath)) {
-    throw new Error(`找不到文件：${pptxPath}`);
-  }
-  if (!/\.(pptx|pdf)$/i.test(pptxPath)) {
-    throw new Error("文件路径必须指向 .pptx 或 .pdf 文件。");
-  }
-  return pptxPath;
+  throw new Error("请选择本地 PPT 或 PDF 文件。");
+}
+
+function parseWeeklyRules(inputRules) {
+  const raw = String(inputRules || DEFAULT_WEEKLY_RULES).trim() || DEFAULT_WEEKLY_RULES;
+  const keywordMatch = raw.match(/包含[“"']([^”"']+)[”"']/);
+  const keyword = (keywordMatch?.[1] || "议题").trim();
+  return {
+    raw,
+    keyword,
+    keywordRule: `筛选文本中包含“${keyword}”且页面日期落在开始日期与截止日期之间的页面。`
+  };
 }
 
 function parsePastedItems(text) {
@@ -537,8 +547,12 @@ function resolveMaterialsSpreadsheet(filePath) {
 function buildCreateOnesWorkItemsPlan(input) {
   const spreadsheetPath = resolveMaterialsSpreadsheet(input.spreadsheetPath);
   const targetIteration = String(input.targetIteration || "").trim();
-  if (!targetIteration) throw new Error("请填写 ONES 目标迭代版本号。");
+  if (!targetIteration) throw new Error("请填写 ONES 目标迭代实际显示名称。");
+  if (input.iterationNameConfirmed !== "yes") {
+    throw new Error("请先在 ONES 页面确认目标迭代实际显示名称，并勾选确认项。");
+  }
   const assignee = String(input.assignee || "wangpeng5@tetras.ai").trim();
+  const targetExistingItemsText = String(input.targetExistingItemsText || "");
   const stamp = new Date().toISOString().replace(/[:.]/g, "-");
   const payloadFile = path.join(RUNS_DIR, `${stamp}-create-ones-workitems-input.json`);
   const analysisFile = path.join(RUNS_DIR, `${stamp}-create-ones-workitems-analysis.json`);
@@ -547,7 +561,7 @@ function buildCreateOnesWorkItemsPlan(input) {
     spreadsheetPath,
     targetIteration,
     assignee,
-    targetExistingItemsText: input.targetExistingItemsText || ""
+    targetExistingItemsText
   }, null, 2));
   const result = spawnSync(PYTHON_BIN, [path.join(ROOT, "scripts/analyze_ones_workitems.py"), payloadFile, analysisFile, csvFile], {
     encoding: "utf-8",
@@ -557,6 +571,9 @@ function buildCreateOnesWorkItemsPlan(input) {
     throw new Error(result.stderr || "创建 ONES 工作项清单分析失败。");
   }
   const analysis = JSON.parse(fs.readFileSync(analysisFile, "utf-8"));
+  const targetExistingRule = analysis.targetExistingItemsProvided
+    ? `已根据粘贴的目标迭代已有工作项去重：识别 ${analysis.targetExistingItemsCount} 条，排除相同“具体需求内容”的需求。`
+    : "未提供目标迭代已有工作项，本次未执行目标迭代去重；导入前需在 ONES 中再次确认无重复需求。";
 
   return {
     automationName: "创建ONES工作项清单",
@@ -579,20 +596,20 @@ function buildCreateOnesWorkItemsPlan(input) {
     exclusionRules: [
       "先排除 状态=已实现 的需求。",
       "再排除已经存在于同一工作簿 sheet=v0.2 中的需求。",
-      "导入前检查 ONES 目标迭代，排除已经存在相同“具体需求内容”的需求。"
+      targetExistingRule
     ],
     duplicateRule: "重复判断以“具体需求内容”为准：Unicode NFKC、转小写、忽略空白和标点。",
-    titleRule: "【优先级】需求分类_具体需求内容",
+    titleRule: "【优先级】需求分类_具体需求内容；标题中的换行会压成空格。",
     importFields: {
       "工作项类型": "需求",
       "负责人": String(input.assignee || "wangpeng5@tetras.ai").trim(),
       "状态": "未开始",
       "所属项目": "Tetrasphere产品开发",
-      "所属迭代": "需在 ONES 页面确认到实际显示名称后使用",
+      "所属迭代": targetIteration,
       "优先级": "P0=最高，P1=较高，P2=普通，P3=较低"
     },
     approvalGates: [
-      "生成 ONES 批量导入 CSV 后，先检查字段匹配。",
+      "已在生成 CSV 前确认目标迭代实际显示名称；导入前仍需检查字段匹配。",
       "点击“开始导入”前必须人工确认。",
       "若导入失败，下载失败工作项列表并读取单元格批注定位原因。",
       "导入成功后刷新目标迭代，确认需求数量增加值等于成功导入数量。"
@@ -748,7 +765,8 @@ async function handleApi(req, res) {
     if (req.url === "/api/weekly-report" && req.method === "POST") {
       const pptxPath = resolveWeeklySource(input);
       const range = dateRange(input.startDate, input.endDate, input.weekDate);
-      const result = spawnSync(PYTHON_BIN, [path.join(ROOT, "scripts/extract_pptx_weekly.py"), pptxPath, range.start, range.end], {
+      const weeklyRules = parseWeeklyRules(input.weeklyRules);
+      const result = spawnSync(PYTHON_BIN, [path.join(ROOT, "scripts/extract_pptx_weekly.py"), pptxPath, range.start, range.end, weeklyRules.keyword], {
         encoding: "utf-8",
         maxBuffer: 10_000_000
       });
@@ -759,7 +777,7 @@ async function handleApi(req, res) {
       if (path.extname(pptxPath).toLowerCase() === ".pdf" && !data.slides.length) {
         data.warning = "PDF 已读取，但没有识别到符合条件的文本内容。若这是扫描件或图片型 PDF，需要先 OCR，或改用可复制文本的 PDF/PPTX。";
       }
-      const model = buildWeeklyReportModel(data, range, path.basename(pptxPath), data.warning);
+      const model = buildWeeklyReportModel(data, range, path.basename(pptxPath), data.warning, weeklyRules);
       const report = formatWeeklyReportPreview(model);
       const file = path.join(REPORTS_DIR, `${range.start}_${range.end}_weekly-report.txt`);
       fs.writeFileSync(file, report);
@@ -769,6 +787,7 @@ async function handleApi(req, res) {
         range,
         report,
         warning: data.warning,
+        weeklyRules,
         sourceSlides: data.slides,
         savedTo: file,
         docxSavedTo: docxFile,
@@ -794,7 +813,7 @@ async function handleApi(req, res) {
   }
 }
 
-function buildWeeklyReportModel(data, range, sourceName, warning) {
+function buildWeeklyReportModel(data, range, sourceName, warning, weeklyRules = parseWeeklyRules()) {
   const projectLabel = (slide) => {
     const text = `${slide.title || ""} ${slide.summary || ""}`;
     if (/Stream/i.test(text)) return "Stream V1.5.0_GPU";
@@ -826,8 +845,8 @@ function buildWeeklyReportModel(data, range, sourceName, warning) {
     sections: [],
   };
   if (!data.slides.length) {
-    model.callout = "管理判断：本周期未从资料中识别到符合日期范围的“议题”内容，建议先确认资料是否为可复制文本，或确认筛选日期是否覆盖目标会议内容。";
-    model.sections.push({ heading: "来源与口径", paragraphs: [warning || "本周未在包含“议题”的页面中识别到当周日期相关内容。"] });
+    model.callout = `管理判断：本周期未从资料中识别到符合日期范围的“${weeklyRules.keyword}”内容，建议先确认资料是否为可复制文本，或确认筛选日期是否覆盖目标会议内容。`;
+    model.sections.push({ heading: "来源与口径", paragraphs: [warning || `本周未在包含“${weeklyRules.keyword}”的页面中识别到当周日期相关内容。`] });
     return model;
   }
 
@@ -891,7 +910,7 @@ function buildWeeklyReportModel(data, range, sourceName, warning) {
   model.sections.push({
     heading: "来源与口径",
     paragraphs: [
-      `来源说明：筛选资料中包含“议题”的${sourcePages}；执行周为 ${range.start.replaceAll("-", ".")}-${range.end.replaceAll("-", ".")}。本周管理判断仅采用与本周期关键日期和节点相关的内容。`
+      `来源说明：${weeklyRules.keywordRule} 命中${sourcePages}；执行周为 ${range.start.replaceAll("-", ".")}-${range.end.replaceAll("-", ".")}。本周管理判断仅采用与本周期关键日期和节点相关的内容。`
     ]
   });
   if (warning) {

@@ -1,0 +1,18 @@
+{
+  "input": {
+    "currentSprint": "",
+    "targetSprint": "",
+    "onesUrl": "",
+    "rule": "",
+    "itemsText": ""
+  },
+  "analysis": {
+    "ok": false,
+    "message": "请补充当前迭代名称、目标迭代名称、筛选规则。",
+    "missing": [
+      "currentSprint",
+      "targetSprint",
+      "rule"
+    ]
+  }
+}

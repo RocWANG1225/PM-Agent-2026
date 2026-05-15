@@ -35,8 +35,85 @@ async function logout() {
   window.location.href = "/login.html";
 }
 
+const WEEKLY_RULES_STORAGE_KEY = "pmAgent.weeklyRules.saved.v2";
+
 function formData(form) {
   return Object.fromEntries(new FormData(form).entries());
+}
+
+function formatDateInput(date) {
+  return date.toISOString().slice(0, 10);
+}
+
+function weekdayIndex(name, fallback) {
+  const values = { 一: 1, 二: 2, 三: 3, 四: 4, 五: 5, 六: 6, 日: 7, 天: 7 };
+  return values[name] || fallback;
+}
+
+function weeklyRangeFromRules(rules, today = new Date()) {
+  const current = new Date(today);
+  current.setHours(12, 0, 0, 0);
+  const day = current.getDay() || 7;
+  const startWeekday = weekdayIndex((rules.match(/开始日期[^。]*上一个周([一二三四五六日天])/) || [])[1], 5);
+  const endWeekday = weekdayIndex((rules.match(/截止日期[^。]*本周([一二三四五六日天])/) || [])[1], 4);
+  const endDate = new Date(current);
+  endDate.setDate(current.getDate() + (endWeekday - day));
+  const startDate = new Date(current);
+  startDate.setDate(current.getDate() + (startWeekday - day) - 7);
+  return {
+    start: formatDateInput(startDate),
+    end: formatDateInput(endDate)
+  };
+}
+
+function getWeeklyRulesElements() {
+  const form = document.getElementById("weeklyForm");
+  return {
+    form,
+    rulesInput: form?.elements.weeklyRules,
+    status: document.getElementById("weeklyRulesStatus")
+  };
+}
+
+function savedWeeklyRules() {
+  const { rulesInput } = getWeeklyRulesElements();
+  return localStorage.getItem(WEEKLY_RULES_STORAGE_KEY) || rulesInput?.defaultValue || "";
+}
+
+function updateWeeklyRulesStatus() {
+  const { rulesInput, status } = getWeeklyRulesElements();
+  if (!rulesInput || !status) return;
+  status.textContent = rulesInput.value === savedWeeklyRules()
+    ? "当前使用已保存规则。"
+    : "规则已修改，保存后才会用于生成周报。";
+}
+
+function applyWeeklyDateDefaults(options = {}) {
+  const { form } = getWeeklyRulesElements();
+  if (!form) return;
+  const range = weeklyRangeFromRules(savedWeeklyRules());
+  if (options.force || !form.elements.startDate.value) form.elements.startDate.value = range.start;
+  if (options.force || !form.elements.endDate.value) form.elements.endDate.value = range.end;
+}
+
+function initWeeklyRules() {
+  const { rulesInput } = getWeeklyRulesElements();
+  if (!rulesInput) return;
+  if (!localStorage.getItem(WEEKLY_RULES_STORAGE_KEY)) {
+    localStorage.setItem(WEEKLY_RULES_STORAGE_KEY, rulesInput.value);
+  }
+  rulesInput.value = savedWeeklyRules();
+  rulesInput.addEventListener("input", updateWeeklyRulesStatus);
+  updateWeeklyRulesStatus();
+  applyWeeklyDateDefaults({ force: true });
+}
+
+function saveWeeklyRules() {
+  const { rulesInput, status } = getWeeklyRulesElements();
+  if (!rulesInput) return;
+  localStorage.setItem(WEEKLY_RULES_STORAGE_KEY, rulesInput.value.trim());
+  applyWeeklyDateDefaults({ force: true });
+  if (status) status.textContent = "已保存，生成周报将按此规则执行。";
 }
 
 function fileToBase64(file) {
@@ -55,11 +132,10 @@ async function weeklyFormData(form) {
   const values = formData(form);
   const file = form.elements.sourceFile.files[0];
   delete values.sourceFile;
+  values.weeklyRules = savedWeeklyRules();
   if (file) {
     values.sourceName = file.name;
     values.sourceBase64 = await fileToBase64(file);
-  } else if (!values.pptxPath) {
-    values.pptxPath = "/Users/wangpeng5/Desktop/20260507-Neusphere internal meeting.pptx";
   }
   return values;
 }
@@ -160,6 +236,7 @@ document.getElementById("weeklyForm").addEventListener("submit", async (event) =
     output.innerHTML = `
       ${data.warning ? `<p>${escapeHtml(data.warning)}</p>` : ""}
       <p><a class="download-link" href="${escapeHtml(data.docxDownloadUrl)}">下载 Word 周报</a></p>
+      <p>运行规则：${escapeHtml(data.weeklyRules.keywordRule)}</p>
       <pre>${escapeHtml(data.report)}</pre>
       <p>Word 已保存：${escapeHtml(data.docxSavedTo)}</p>
     `;
@@ -194,5 +271,7 @@ document.getElementById("automationForm").addEventListener("submit", async (even
 
 document.getElementById("refreshSpreadsheets").addEventListener("click", loadSpreadsheets);
 document.getElementById("logoutButton").addEventListener("click", logout);
+document.getElementById("saveWeeklyRules").addEventListener("click", saveWeeklyRules);
+initWeeklyRules();
 loadCurrentUser();
 loadSpreadsheets();

@@ -193,6 +193,23 @@ label {
   font-weight: 700;
 }
 
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #f9fbfc;
+}
+
+.checkbox-row input {
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  flex: 0 0 auto;
+}
+
 .wide {
   grid-column: 1 / -1;
 }
@@ -212,6 +229,22 @@ select {
 textarea {
   min-height: 130px;
   resize: vertical;
+}
+
+.rules-input {
+  min-height: 150px;
+  line-height: 1.55;
+}
+
+.action-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.inline-status {
+  color: var(--muted);
+  font-size: 13px;
 }
 
 .rule-board {
