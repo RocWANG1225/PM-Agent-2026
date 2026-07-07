@@ -17,6 +17,7 @@
       </div>
       <nav>
         <a href="#weekly" class="active">周报助手</a>
+        <a href="#feishu-weekly">飞书周报助手</a>
         <a href="#automation">创建 ONES 工作项</a>
         <a href="#ones">ONES 工作项迁移</a>
       </nav>
@@ -70,6 +71,36 @@
           <button type="submit">生成周报</button>
         </form>
         <pre id="weeklyOutput" class="output">等待生成。</pre>
+      </section>
+
+      <section id="feishu-weekly" class="panel">
+        <div class="section-head">
+          <div>
+            <h2>飞书周报助手</h2>
+            <p>读取飞书“Vision Claw项目群”过去一周消息，按上周五到本周四生成老板版 Word 周报。</p>
+          </div>
+          <span class="badge local-badge">本地生成</span>
+        </div>
+        <form id="feishuWeeklyForm" class="grid-form">
+          <label class="wide">
+            飞书消息文本文件（可选）
+            <input name="sourceFile" type="file" accept=".txt,.md,.csv,.json,text/plain,text/markdown,text/csv,application/json" />
+          </label>
+          <label class="wide">
+            飞书“Vision Claw项目群”消息
+            <textarea name="feishuMessages" class="message-input" placeholder="从飞书 Vision Claw项目群复制过去一周消息，或上传导出的文本文件。"></textarea>
+          </label>
+          <div class="wide rule-board">
+            <h3>固定运行规则</h3>
+            <ul>
+              <li>查看飞书“Vision Claw项目群”里过去一周的信息，时间范围从上周五到本周四。</li>
+              <li>生成老板版周报草稿，并输出 Word 文件。</li>
+              <li>全程只在本地生成文件，不写入第三方系统。</li>
+            </ul>
+          </div>
+          <button type="submit">生成飞书周报</button>
+        </form>
+        <pre id="feishuWeeklyOutput" class="output">等待生成。</pre>
       </section>
 
       <section id="automation" class="panel">

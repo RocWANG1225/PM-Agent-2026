@@ -500,10 +500,10 @@ function saveRun(type, payload) {
   return file;
 }
 
-function createDocxReport(report, range, sourceName, model) {
+function createDocxReport(report, range, sourceName, model, name = "weekly-report") {
   const stamp = `${range.start}_${range.end}`;
-  const inputFile = path.join(REPORTS_DIR, `${stamp}_weekly-report.json`);
-  const docxFile = path.join(REPORTS_DIR, `${stamp}_weekly-report.docx`);
+  const inputFile = path.join(REPORTS_DIR, `${stamp}_${name}.json`);
+  const docxFile = path.join(REPORTS_DIR, `${stamp}_${name}.docx`);
   fs.writeFileSync(inputFile, JSON.stringify({ report, range, sourceName, model }, null, 2));
   const result = spawnSync(PYTHON_BIN, [path.join(ROOT, "scripts/report_to_docx.py"), inputFile, docxFile], {
     encoding: "utf-8",
@@ -618,6 +618,146 @@ function buildCreateOnesWorkItemsPlan(input) {
     ],
     safety: "当前本地 MVP 会生成 ONES 批量导入 CSV，但不会点击“开始导入”或直接创建 ONES 工作项。"
   };
+}
+
+function feishuWeeklyRange(today = new Date()) {
+  const current = new Date(today);
+  current.setHours(12, 0, 0, 0);
+  const day = current.getDay() || 7;
+  const start = new Date(current);
+  start.setDate(current.getDate() + (5 - day) - 7);
+  const end = new Date(current);
+  end.setDate(current.getDate() + (4 - day));
+  return {
+    start: start.toISOString().slice(0, 10),
+    end: end.toISOString().slice(0, 10)
+  };
+}
+
+function parseFeishuSource(input) {
+  const pasted = String(input.feishuMessages || "").trim();
+  if (pasted) return { text: pasted, sourceName: "粘贴的飞书消息" };
+  if (input.sourceBase64) {
+    const safeName = String(input.sourceName || "feishu-messages.txt").replace(/[^\w\u4e00-\u9fa5.-]+/g, "_");
+    if (!/\.(txt|md|csv|json)$/i.test(safeName)) {
+      throw new Error("请选择 .txt、.md、.csv 或 .json 文本文件，或直接粘贴飞书消息。");
+    }
+    return {
+      text: Buffer.from(input.sourceBase64, "base64").toString("utf-8"),
+      sourceName: safeName
+    };
+  }
+  throw new Error("请粘贴飞书群消息，或选择已导出的飞书文本文件。");
+}
+
+function parseDateToken(value) {
+  const text = String(value || "");
+  let match = text.match(/(20\d{2})[-/.年](\d{1,2})[-/.月](\d{1,2})/);
+  if (match) {
+    const d = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]), 12);
+    return Number.isNaN(d.getTime()) ? null : d.toISOString().slice(0, 10);
+  }
+  match = text.match(/(?<!\d)(\d{1,2})[-/.月](\d{1,2})(?!\d)/);
+  if (!match) return null;
+  const d = new Date(new Date().getFullYear(), Number(match[1]) - 1, Number(match[2]), 12);
+  return Number.isNaN(d.getTime()) ? null : d.toISOString().slice(0, 10);
+}
+
+function collectFeishuMessages(text, range) {
+  const rows = String(text || "")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const messages = [];
+  let currentDate = null;
+  for (const row of rows) {
+    const parsedDate = parseDateToken(row);
+    if (parsedDate) currentDate = parsedDate;
+    const hasDate = Boolean(currentDate);
+    if (hasDate && (currentDate < range.start || currentDate > range.end)) continue;
+    messages.push({
+      date: currentDate,
+      text: row.replace(/^\[?20\d{2}[-/.年]\d{1,2}[-/.月]\d{1,2}[^\]\s]*\]?\s*/, "")
+    });
+  }
+  return messages;
+}
+
+function classifyFeishuMessages(messages) {
+  const buckets = {
+    progress: [],
+    risk: [],
+    plan: [],
+    decision: [],
+    other: []
+  };
+  for (const message of messages) {
+    const text = message.text;
+    const entry = message.date ? `${message.date} ${text}` : text;
+    if (/风险|阻塞|延期|卡住|依赖|问题|bug|缺陷|失败|回归|不通过/i.test(text)) buckets.risk.push(entry);
+    else if (/结论|决定|确认|拍板|同意|变更|调整|定版/i.test(text)) buckets.decision.push(entry);
+    else if (/完成|已|进展|提交|合入|发布|提测|验证|联调|修复/i.test(text)) buckets.progress.push(entry);
+    else if (/下周|计划|待办|todo|跟进|推进|安排|准备|需要/i.test(text)) buckets.plan.push(entry);
+    else buckets.other.push(entry);
+  }
+  return buckets;
+}
+
+function compactList(items, maxItems = 8, maxLength = 120) {
+  return items.slice(0, maxItems).map((item) => {
+    const value = String(item || "").replace(/\s+/g, " ").trim();
+    return value.length > maxLength ? `${value.slice(0, maxLength)}...` : value;
+  });
+}
+
+function buildFeishuWeeklyReportModel(input) {
+  const range = feishuWeeklyRange();
+  const source = parseFeishuSource(input);
+  const messages = collectFeishuMessages(source.text, range);
+  const buckets = classifyFeishuMessages(messages);
+  const progress = compactList([...buckets.progress, ...buckets.decision, ...buckets.other]);
+  const risks = compactList(buckets.risk);
+  const plans = compactList(buckets.plan);
+  const hasContent = messages.length > 0;
+  const status = risks.length ? "存在需跟踪风险" : hasContent ? "本周推进中" : "未识别到本周期消息";
+  const model = {
+    title: "Vision Claw 飞书项目周报",
+    subtitle: `汇报周期：${range.start.replaceAll("-", ".")}-${range.end.replaceAll("-", ".")}｜来源：飞书 Vision Claw项目群`,
+    callout: hasContent
+      ? `管理判断：本周期从飞书 Vision Claw项目群识别 ${messages.length} 条本地消息，重点围绕进展闭环、风险跟踪和下周推进事项整理；生成过程只在本地完成，不写入飞书或其他第三方系统。`
+      : "管理判断：本周期未从输入内容中识别到落在上周五到本周四范围内的飞书消息，请确认导出内容是否包含日期，或补充粘贴本周期群消息。",
+    overviewRows: [
+      ["项目", "本周状态", "管理判断"],
+      ["Vision Claw", status, risks.length ? "建议优先确认风险责任人、截止时间和验收口径。" : "建议继续按本周进展推动节点闭环，并在下周同步关键结果。"]
+    ],
+    sections: []
+  };
+  model.sections.push({
+    heading: "本周关键进展",
+    paragraphs: progress.length ? progress.map((item) => `Vision Claw：${item}`) : ["本周期输入内容中未识别到明确进展项。"]
+  });
+  model.sections.push({
+    heading: "关键风险 / 阻塞",
+    paragraphs: risks.length ? risks.map((item) => `Vision Claw：${item}`) : ["当前输入内容中未识别到明确风险或阻塞；建议人工复核是否存在未显式标注的依赖问题。"]
+  });
+  model.sections.push({
+    heading: "下周计划",
+    paragraphs: plans.length ? plans.map((item) => `Vision Claw：${item}`) : ["基于飞书消息，建议下周继续跟踪本周进展项的闭环结果、风险处理状态和验收反馈。"]
+  });
+  model.sections.push({
+    heading: "需要老板关注或决策",
+    paragraphs: risks.length
+      ? ["请关注上述风险项是否已有明确 owner、解决时点和升级路径；若风险影响版本节点，建议提前明确取舍方案。"]
+      : ["暂无从飞书消息中识别出的明确升级事项；如版本节点临近，建议继续关注验收质量和跨团队依赖。"]
+  });
+  model.sections.push({
+    heading: "来源与口径",
+    paragraphs: [
+      `运行规则：查看飞书“Vision Claw项目群”里过去一周的信息，时间范围固定为上周五到本周四；生成老板版周报草稿，并输出 Word 文件；全程只在本地生成文件，不写入第三方系统。`,
+      `本地输入来源：${source.sourceName}；识别消息数：${messages.length}。`
+    ]
+  });
+  return { model, range, sourceName: source.sourceName, messages };
 }
 
 async function handleApi(req, res) {
@@ -794,6 +934,24 @@ async function handleApi(req, res) {
         warning: data.warning,
         weeklyRules,
         sourceSlides: data.slides,
+        savedTo: file,
+        docxSavedTo: docxFile,
+        docxDownloadUrl: `/api/reports/download?name=${encodeURIComponent(path.basename(docxFile))}`
+      });
+    }
+
+    if (req.url === "/api/feishu-weekly-report" && req.method === "POST") {
+      const { model, range, sourceName, messages } = buildFeishuWeeklyReportModel(input);
+      const report = formatWeeklyReportPreview(model);
+      const file = path.join(REPORTS_DIR, `${range.start}_${range.end}_feishu-weekly-report.txt`);
+      fs.writeFileSync(file, report);
+      const docxFile = createDocxReport(report, range, sourceName, model, "feishu-weekly-report");
+      return sendJson(res, 200, {
+        ok: true,
+        range,
+        report,
+        sourceName,
+        matchedMessages: messages.length,
         savedTo: file,
         docxSavedTo: docxFile,
         docxDownloadUrl: `/api/reports/download?name=${encodeURIComponent(path.basename(docxFile))}`
@@ -984,7 +1142,9 @@ module.exports = {
   analyzeMigration,
   buildWeeklyReport,
   buildWeeklyReportModel,
+  buildFeishuWeeklyReportModel,
   buildCreateOnesWorkItemsPlan,
+  feishuWeeklyRange,
   formatWeeklyReportPreview,
   dateRange,
   parsePastedItems,
