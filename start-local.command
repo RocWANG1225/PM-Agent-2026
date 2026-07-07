@@ -2,13 +2,28 @@
 cd /Users/wangpeng5/Documents/GitHub/PM-Agent-2026
 
 if [ -f .env.local ]; then
-  set -a
-  source .env.local
-  set +a
+  while IFS= read -r line || [ -n "$line" ]; do
+    [[ -z "$line" || "$line" == \#* || "$line" != *=* ]] && continue
+    key="${line%%=*}"
+    value="${line#*=}"
+    value="${value%\"}"
+    value="${value#\"}"
+    value="${value%\'}"
+    value="${value#\'}"
+    export "$key=$value"
+  done < .env.local
 fi
 
 NODE_BIN="/Users/wangpeng5/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node"
-APP_URL="http://localhost:4173"
+PORT="${PORT:-4173}"
+APP_URL="http://localhost:$PORT"
+
+if lsof -nP -iTCP:$PORT -sTCP:LISTEN >/dev/null 2>&1; then
+  echo "端口 $PORT 已被占用。请先关闭之前打开的项目管理 Agent 终端窗口，或执行："
+  echo "lsof -nP -iTCP:$PORT -sTCP:LISTEN"
+  echo "确认旧服务后再停止它，然后重新运行 ./start-local.command。"
+  exit 1
+fi
 
 echo "正在启动项目管理 Agent..."
 "$NODE_BIN" \
