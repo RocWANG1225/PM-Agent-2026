@@ -5,6 +5,8 @@ const path = require("path");
 const { spawnSync } = require("child_process");
 
 const ROOT = path.resolve(__dirname, "../..");
+loadLocalEnv(path.join(ROOT, ".env.local"));
+
 const WEB_ROOT = path.join(ROOT, "apps/web/public");
 const RUNS_DIR = path.join(ROOT, "data/runs");
 const REPORTS_DIR = path.join(ROOT, "data/reports");
@@ -34,6 +36,23 @@ const DEFAULT_WEEKLY_RULES = `1. 只筛选文本中包含“议题”的页面�
 const sessions = new Map();
 const webauthnChallenges = new Map();
 let feishuTokenCache = null;
+
+function loadLocalEnv(file) {
+  if (!fs.existsSync(file)) return;
+  const lines = fs.readFileSync(file, "utf-8").split(/\r?\n/);
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#") || !trimmed.includes("=")) continue;
+    const index = trimmed.indexOf("=");
+    const key = trimmed.slice(0, index).trim();
+    let value = trimmed.slice(index + 1).trim();
+    if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(key) || process.env[key]) continue;
+    if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+      value = value.slice(1, -1);
+    }
+    process.env[key] = value;
+  }
+}
 
 fs.mkdirSync(RUNS_DIR, { recursive: true });
 fs.mkdirSync(REPORTS_DIR, { recursive: true });
