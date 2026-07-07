@@ -713,6 +713,17 @@ function feishuUnixSeconds(dateText, endOfDay = false) {
   return Math.floor(new Date(`${dateText}${suffix}`).getTime() / 1000);
 }
 
+function feishuErrorMessage(message, fallback) {
+  const raw = String(message || "");
+  if (/unavailable or inactive/i.test(raw)) {
+    return "飞书应用在当前企业内不可用或未启用。请确认 .env.local 使用的是当前企业的自建应用 App ID/Secret，并在飞书开放平台发布/启用该应用、把机器人加入 Vision Claw项目群。";
+  }
+  if (/invalid param/i.test(raw)) {
+    return "飞书 App ID 或 App Secret 参数无效。请确认 .env.local 中填写的是飞书开放平台里的真实 App ID 和 App Secret。";
+  }
+  return raw || fallback;
+}
+
 async function getFeishuTenantAccessToken() {
   if (!FEISHU_APP_ID || !FEISHU_APP_SECRET) {
     throw new Error("飞书自动读取尚未配置。请在 .env.local 中设置 FEISHU_APP_ID 和 FEISHU_APP_SECRET，并确保应用有读取群消息权限。");
@@ -730,7 +741,7 @@ async function getFeishuTenantAccessToken() {
   });
   const data = await res.json();
   if (!res.ok || data.code !== 0 || !data.tenant_access_token) {
-    throw new Error(data.msg || "飞书 tenant_access_token 获取失败。");
+    throw new Error(feishuErrorMessage(data.msg, "飞书 tenant_access_token 获取失败。"));
   }
   feishuTokenCache = {
     token: data.tenant_access_token,
@@ -753,7 +764,7 @@ async function feishuApi(pathname, searchParams = {}) {
   });
   const data = await res.json();
   if (!res.ok || data.code !== 0) {
-    throw new Error(data.msg || `飞书接口调用失败：${pathname}`);
+    throw new Error(feishuErrorMessage(data.msg, `飞书接口调用失败：${pathname}`));
   }
   return data.data || {};
 }
