@@ -19,15 +19,27 @@ body {
   font-family: Inter, "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
   background: var(--bg);
   color: var(--ink);
+}
+
+body:not(.login-page) {
   display: grid;
-  grid-template-columns: 260px 1fr;
-  min-height: 100vh;
+  grid-template-columns: 260px minmax(0, 1fr);
+  height: 100vh;
+  overflow: hidden;
+  --app-pad: clamp(14px, 2.2vw, 28px);
+  --app-gap: clamp(10px, 1.25vw, 16px);
+  --panel-pad: clamp(12px, 1.25vw, 16px);
+  --form-gap: clamp(8px, 1vw, 12px);
+  --h1-size: clamp(20px, 2.2vw, 28px);
+  --h2-size: clamp(16px, 1.6vw, 20px);
+  --body-size: clamp(12px, 1vw, 14px);
 }
 
 .login-page {
   display: grid;
   grid-template-columns: 1fr;
   place-items: center;
+  min-height: 100vh;
 }
 
 .login-shell {
@@ -64,6 +76,8 @@ body {
   background: #15232f;
   color: #fff;
   padding: 24px 18px;
+  min-height: 0;
+  overflow: auto;
 }
 
 .brand {
@@ -138,17 +152,25 @@ nav a:hover {
   opacity: 0.55;
 }
 
-main {
-  padding: 28px;
-  max-width: 1280px;
+main:not(.login-shell) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: var(--app-gap);
+  min-height: 0;
+  padding: var(--app-pad);
   width: 100%;
+  height: 100vh;
+  overflow: hidden;
+  font-size: var(--body-size);
 }
 
 .topbar {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 22px;
+  grid-column: 1 / -1;
+  min-width: 0;
 }
 
 .userbar {
@@ -164,11 +186,11 @@ h2 {
 }
 
 h1 {
-  font-size: 28px;
+  font-size: var(--h1-size, 28px);
 }
 
 h2 {
-  font-size: 20px;
+  font-size: var(--h2-size, 20px);
 }
 
 p {
@@ -200,11 +222,19 @@ p {
 }
 
 .panel {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 8px;
-  padding: 20px;
-  margin-bottom: 18px;
+  padding: var(--panel-pad);
+  overflow: auto;
+}
+
+.panel[hidden] {
+  display: none;
 }
 
 .section-head {
@@ -212,13 +242,13 @@ p {
   justify-content: space-between;
   gap: 18px;
   align-items: flex-start;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .grid-form {
   display: grid;
-  grid-template-columns: repeat(2, minmax(240px, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(2, minmax(160px, 1fr));
+  gap: var(--form-gap);
   align-items: end;
 }
 
@@ -263,18 +293,24 @@ select {
   background: #fff;
 }
 
+body:not(.login-page) input,
+body:not(.login-page) textarea,
+body:not(.login-page) select {
+  padding: clamp(8px, 0.8vw, 10px) 11px;
+}
+
 textarea {
-  min-height: 130px;
+  min-height: clamp(72px, 12vh, 96px);
   resize: vertical;
 }
 
 .rules-input {
-  min-height: 150px;
+  min-height: clamp(80px, 14vh, 112px);
   line-height: 1.55;
 }
 
 .message-input {
-  min-height: 220px;
+  min-height: clamp(96px, 18vh, 150px);
   line-height: 1.55;
 }
 
@@ -293,7 +329,7 @@ textarea {
   border: 1px solid var(--line);
   background: #f9fbfc;
   border-radius: 6px;
-  padding: 14px;
+  padding: 12px;
 }
 
 .rule-board h3 {
@@ -305,7 +341,7 @@ textarea {
   margin: 0;
   padding-left: 20px;
   color: var(--muted);
-  line-height: 1.7;
+  line-height: 1.55;
 }
 
 button {
@@ -335,11 +371,11 @@ button:hover {
 
 .output,
 .table-wrap {
-  margin-top: 16px;
+  margin-top: 12px;
   border: 1px solid var(--line);
   background: #f9fbfc;
   border-radius: 6px;
-  padding: 14px;
+  padding: 12px;
   overflow: auto;
   white-space: pre-wrap;
 }
@@ -382,12 +418,23 @@ th {
 }
 
 @media (max-width: 860px) {
-  body {
+  body:not(.login-page) {
     grid-template-columns: 1fr;
+    height: auto;
+    min-height: 100vh;
+    overflow: auto;
   }
 
   .sidebar {
     position: static;
+  }
+
+  main:not(.login-shell) {
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: none;
+    height: auto;
+    overflow: visible;
   }
 
   .grid-form {
