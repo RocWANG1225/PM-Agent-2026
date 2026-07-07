@@ -66,33 +66,125 @@ function applyModuleOrder(order) {
     if (navItem) nav.appendChild(navItem);
     if (section) main.appendChild(section);
   }
-  updateModuleOrderControls(order);
 }
 
-function updateModuleOrderControls(order) {
-  for (const [index, id] of order.entries()) {
-    const item = document.querySelector(`[data-module-id="${id}"]`);
-    item?.querySelector(".move-up")?.toggleAttribute("disabled", index === 0);
-    item?.querySelector(".move-down")?.toggleAttribute("disabled", index === order.length - 1);
-  }
+function currentModuleOrder() {
+  return [...document.querySelectorAll(".module-nav-item")]
+    .map((item) => item.dataset.moduleId)
+    .filter(Boolean);
 }
 
-function moveModule(id, direction) {
-  const order = savedModuleOrder();
-  const index = order.indexOf(id);
-  const target = index + direction;
-  if (index < 0 || target < 0 || target >= order.length) return;
-  [order[index], order[target]] = [order[target], order[index]];
+function saveCurrentModuleOrder() {
+  const order = currentModuleOrder();
   saveModuleOrder(order);
   applyModuleOrder(order);
 }
 
 function initModuleOrdering() {
+  const nav = document.getElementById("moduleNav");
+  let draggedItem = null;
+  let activePointerId = null;
+
+  function startDrag(item) {
+    draggedItem = item;
+    draggedItem?.classList.add("is-dragging");
+  }
+
+  function moveDraggedItem(clientY) {
+    if (!nav || !draggedItem) return;
+    const targetItem = [...nav.querySelectorAll(".module-nav-item:not(.is-dragging)")]
+      .find((item) => {
+        const rect = item.getBoundingClientRect();
+        return clientY < rect.top + rect.height / 2;
+      });
+    nav.insertBefore(draggedItem, targetItem || null);
+  }
+
+  function finishDrag() {
+    if (!draggedItem) return;
+    draggedItem.classList.remove("is-dragging");
+    draggedItem = null;
+    activePointerId = null;
+    saveCurrentModuleOrder();
+  }
+
   applyModuleOrder(savedModuleOrder());
-  document.querySelectorAll(".module-nav-item").forEach((item) => {
-    const id = item.dataset.moduleId;
-    item.querySelector(".move-up")?.addEventListener("click", () => moveModule(id, -1));
-    item.querySelector(".move-down")?.addEventListener("click", () => moveModule(id, 1));
+
+  nav?.querySelectorAll(".drag-handle").forEach((handle) => {
+    handle.addEventListener("pointerdown", (event) => {
+      if (event.button !== 0) return;
+      const item = handle.closest(".module-nav-item");
+      if (!item) return;
+      startDrag(item);
+      activePointerId = event.pointerId;
+      handle.setPointerCapture(event.pointerId);
+      event.preventDefault();
+    });
+
+    handle.addEventListener("pointerup", (event) => {
+      if (event.pointerId !== activePointerId) return;
+      handle.releasePointerCapture(event.pointerId);
+      finishDrag();
+    });
+
+    handle.addEventListener("pointercancel", finishDrag);
+
+    handle.addEventListener("mousedown", (event) => {
+      if (event.button !== 0 || draggedItem) return;
+      const item = handle.closest(".module-nav-item");
+      if (!item) return;
+      startDrag(item);
+      event.preventDefault();
+    });
+
+    handle.addEventListener("dragstart", (event) => {
+      const item = handle.closest(".module-nav-item");
+      if (!item) return;
+      startDrag(item);
+      event.dataTransfer.effectAllowed = "move";
+      event.dataTransfer.setData("text/plain", draggedItem.dataset.moduleId || "");
+    });
+
+    handle.addEventListener("dragend", () => {
+      finishDrag();
+    });
+  });
+
+  nav?.addEventListener("dragover", (event) => {
+    if (!draggedItem) return;
+    const targetItem = event.target.closest(".module-nav-item");
+    if (!targetItem || targetItem === draggedItem || targetItem.parentElement !== nav) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+    moveDraggedItem(event.clientY);
+  });
+
+  nav?.addEventListener("drop", (event) => {
+    if (!draggedItem) return;
+    event.preventDefault();
+    saveCurrentModuleOrder();
+  });
+
+  document.addEventListener("pointermove", (event) => {
+    if (!draggedItem || event.pointerId !== activePointerId) return;
+    event.preventDefault();
+    moveDraggedItem(event.clientY);
+  });
+
+  document.addEventListener("pointerup", (event) => {
+    if (!draggedItem || event.pointerId !== activePointerId) return;
+    finishDrag();
+  });
+
+  document.addEventListener("mousemove", (event) => {
+    if (!draggedItem || activePointerId !== null) return;
+    event.preventDefault();
+    moveDraggedItem(event.clientY);
+  });
+
+  document.addEventListener("mouseup", () => {
+    if (!draggedItem || activePointerId !== null) return;
+    finishDrag();
   });
 }
 
