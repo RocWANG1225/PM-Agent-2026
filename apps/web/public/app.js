@@ -128,6 +128,15 @@ function fileToBase64(file) {
   });
 }
 
+function fileToText(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(reader.error || new Error("文件读取失败"));
+    reader.readAsText(file);
+  });
+}
+
 async function weeklyFormData(form) {
   const values = formData(form);
   const file = form.elements.sourceFile.files[0];
@@ -237,6 +246,23 @@ document.getElementById("weeklyForm").addEventListener("submit", async (event) =
       ${data.warning ? `<p>${escapeHtml(data.warning)}</p>` : ""}
       <p><a class="download-link" href="${escapeHtml(data.docxDownloadUrl)}">下载 Word 周报</a></p>
       <p>运行规则：${escapeHtml(data.weeklyRules.keywordRule)}</p>
+      <pre>${escapeHtml(data.report)}</pre>
+      <p>Word 已保存：${escapeHtml(data.docxSavedTo)}</p>
+    `;
+  } catch (error) {
+    output.textContent = error.message;
+  }
+});
+
+document.getElementById("feishuWeeklyForm").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const output = document.getElementById("feishuWeeklyOutput");
+  output.textContent = "正在生成飞书周报...";
+  try {
+    const data = await postJson("/api/feishu-weekly-report", formData(event.currentTarget));
+    output.innerHTML = `
+      <p><a class="download-link" href="${escapeHtml(data.docxDownloadUrl)}">下载 Word 周报</a></p>
+      <p>时间范围：${escapeHtml(data.range.start)} 至 ${escapeHtml(data.range.end)}；识别消息：${escapeHtml(data.matchedMessages)} 条。</p>
       <pre>${escapeHtml(data.report)}</pre>
       <p>Word 已保存：${escapeHtml(data.docxSavedTo)}</p>
     `;

@@ -1,8 +1,9 @@
 # 项目管理 Agent 本地化平台
 
-这是一个本地化 MVP，把 3 个项目管理自动化能力组织成一个大项目下的 3 个子项目：
+这是一个本地化 MVP，把 4 个项目管理自动化能力组织成一个大项目下的 4 个子项目：
 
 - 周报助手：选择本地 PPT/PDF，按开始日期和截止日期筛选包含“议题”的页面，生成老板版周报草稿，并输出 Word 文件。
+- 飞书周报助手：读取飞书“Vision Claw项目群”导出或粘贴的消息，按上周五到本周四生成老板版周报草稿，并输出 Word 文件。
 - 创建 ONES 工作项清单：从固定目录选择需求表，填写 ONES 目标迭代，按自动化规则生成批量导入 CSV 和确认规则。
 - ONES 工作项迁移：输入 ONES 链接、当前迭代、目标迭代和筛选规则，输出建议移动清单。
 
@@ -54,6 +55,18 @@ PM_AGENT_USER=你的账号 PM_AGENT_PASSWORD=你的密码 node apps/api/server.j
 PM_AGENT_MATERIALS_DIR=/你的/表格目录 node apps/api/server.js
 ```
 
+如需让“飞书周报助手”自动读取飞书“Vision Claw项目群”，请在项目根目录创建 `.env.local`，并配置飞书自建应用凭据：
+
+```bash
+FEISHU_APP_ID=cli_xxx
+FEISHU_APP_SECRET=xxx
+FEISHU_CHAT_NAME=Vision Claw项目群
+# 如果群名搜索不到，可直接配置群 ID：
+# FEISHU_CHAT_ID=oc_xxx
+```
+
+飞书应用需要具备读取群聊和读取消息的权限，并且机器人需要加入“Vision Claw项目群”。`start-local.command` 会自动读取 `.env.local`。
+
 ## Docker 部署
 
 ```bash
@@ -67,6 +80,7 @@ Docker 镜像会安装脚本所需的 Python 依赖，并在容器内使用 `pyt
 - ONES 模块当前只做分析，不会移动、保存或提交工作项。
 - 创建 ONES 工作项清单模块当前只保存运行计划，不会直接创建 ONES 工作项。
 - PPT/PDF 文件会上传到本机服务并保存在 `data/uploads/`，只在本地使用。
+- 飞书周报助手通过飞书开放 API 读取“Vision Claw项目群”消息，只生成本地 Word 周报，不会写入飞书或其他第三方系统。
 - Word 周报会继承 `templates/weekly-report-template.docx` 的版式。
 - 创建 ONES 工作项清单要求每次手动选择需求表格并输入 ONES 目标迭代。
 - 平台已加入本地账号访问；生产或内网多人使用时请修改默认密码。

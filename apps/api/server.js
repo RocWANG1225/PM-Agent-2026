@@ -5,6 +5,8 @@ const path = require("path");
 const { spawnSync } = require("child_process");
 
 const ROOT = path.resolve(__dirname, "../..");
+loadLocalEnv(path.join(ROOT, ".env.local"));
+
 const WEB_ROOT = path.join(ROOT, "apps/web/public");
 const RUNS_DIR = path.join(ROOT, "data/runs");
 const REPORTS_DIR = path.join(ROOT, "data/reports");
@@ -19,6 +21,11 @@ const HOST = process.env.HOST || "127.0.0.1";
 const PYTHON_BIN = process.env.PYTHON_BIN || (fs.existsSync(BUNDLED_PYTHON_BIN) ? BUNDLED_PYTHON_BIN : "python3");
 const AUTH_USER = process.env.PM_AGENT_USER || "wangpeng5";
 const AUTH_PASSWORD = process.env.PM_AGENT_PASSWORD || "pm-agent-2026";
+const FEISHU_APP_ID = process.env.FEISHU_APP_ID || process.env.LARK_APP_ID || "";
+const FEISHU_APP_SECRET = process.env.FEISHU_APP_SECRET || process.env.LARK_APP_SECRET || "";
+const FEISHU_CHAT_ID = process.env.FEISHU_CHAT_ID || "";
+const FEISHU_CHAT_NAME = process.env.FEISHU_CHAT_NAME || "Vision Claw项目群";
+const FEISHU_BASE_URL = "https://open.feishu.cn/open-apis";
 const SESSION_TTL_MS = 8 * 60 * 60 * 1000;
 const DEFAULT_WEEKLY_RULES = `1. 只筛选文本中包含“议题”的页面。
 2. 页面中出现的开始日期=“系统当前日期的上一个周五”。
@@ -28,6 +35,24 @@ const DEFAULT_WEEKLY_RULES = `1. 只筛选文本中包含“议题”的页面�
 6. 全程只在本地生成文件，不写入第三方系统。`;
 const sessions = new Map();
 const webauthnChallenges = new Map();
+let feishuTokenCache = null;
+
+function loadLocalEnv(file) {
+  if (!fs.existsSync(file)) return;
+  const lines = fs.readFileSync(file, "utf-8").split(/\r?\n/);
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#") || !trimmed.includes("=")) continue;
+    const index = trimmed.indexOf("=");
+    const key = trimmed.slice(0, index).trim();
+    let value = trimmed.slice(index + 1).trim();
+    if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(key) || process.env[key]) continue;
+    if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+      value = value.slice(1, -1);
+    }
+    process.env[key] = value;
+  }
+}
 
 fs.mkdirSync(RUNS_DIR, { recursive: true });
 fs.mkdirSync(REPORTS_DIR, { recursive: true });
@@ -500,10 +525,10 @@ function saveRun(type, payload) {
   return file;
 }
 
-function createDocxReport(report, range, sourceName, model) {
+function createDocxReport(report, range, sourceName, model, name = "weekly-report") {
   const stamp = `${range.start}_${range.end}`;
-  const inputFile = path.join(REPORTS_DIR, `${stamp}_weekly-report.json`);
-  const docxFile = path.join(REPORTS_DIR, `${stamp}_weekly-report.docx`);
+  const inputFile = path.join(REPORTS_DIR, `${stamp}_${name}.json`);
+  const docxFile = path.join(REPORTS_DIR, `${stamp}_${name}.docx`);
   fs.writeFileSync(inputFile, JSON.stringify({ report, range, sourceName, model }, null, 2));
   const result = spawnSync(PYTHON_BIN, [path.join(ROOT, "scripts/report_to_docx.py"), inputFile, docxFile], {
     encoding: "utf-8",
@@ -620,8 +645,285 @@ function buildCreateOnesWorkItemsPlan(input) {
   };
 }
 
+function feishuWeeklyRange(today = new Date()) {
+  const current = new Date(today);
+  current.setHours(12, 0, 0, 0);
+  const day = current.getDay() || 7;
+  const start = new Date(current);
+  start.setDate(current.getDate() + (5 - day) - 7);
+  const end = new Date(current);
+  end.setDate(current.getDate() + (4 - day));
+  return {
+    start: start.toISOString().slice(0, 10),
+    end: end.toISOString().slice(0, 10)
+  };
+}
+
+function parseLocalFeishuSource(input) {
+  const pasted = String(input.feishuMessages || "").trim();
+  if (pasted) return { text: pasted, sourceName: "粘贴的飞书消息" };
+  if (input.sourceBase64) {
+    const safeName = String(input.sourceName || "feishu-messages.txt").replace(/[^\w\u4e00-\u9fa5.-]+/g, "_");
+    if (!/\.(txt|md|csv|json)$/i.test(safeName)) {
+      throw new Error("请选择 .txt、.md、.csv 或 .json 文本文件，或直接粘贴飞书消息。");
+    }
+    return {
+      text: Buffer.from(input.sourceBase64, "base64").toString("utf-8"),
+      sourceName: safeName
+    };
+  }
+  return null;
+}
+
+function parseDateToken(value) {
+  const text = String(value || "");
+  let match = text.match(/(20\d{2})[-/.年](\d{1,2})[-/.月](\d{1,2})/);
+  if (match) {
+    const d = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]), 12);
+    return Number.isNaN(d.getTime()) ? null : d.toISOString().slice(0, 10);
+  }
+  match = text.match(/(?<!\d)(\d{1,2})[-/.月](\d{1,2})(?!\d)/);
+  if (!match) return null;
+  const d = new Date(new Date().getFullYear(), Number(match[1]) - 1, Number(match[2]), 12);
+  return Number.isNaN(d.getTime()) ? null : d.toISOString().slice(0, 10);
+}
+
+function collectFeishuMessages(text, range) {
+  const rows = String(text || "")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const messages = [];
+  let currentDate = null;
+  for (const row of rows) {
+    const parsedDate = parseDateToken(row);
+    if (parsedDate) currentDate = parsedDate;
+    const hasDate = Boolean(currentDate);
+    if (hasDate && (currentDate < range.start || currentDate > range.end)) continue;
+    messages.push({
+      date: currentDate,
+      text: row.replace(/^\[?20\d{2}[-/.年]\d{1,2}[-/.月]\d{1,2}[^\]\s]*\]?\s*/, "")
+    });
+  }
+  return messages;
+}
+
+function feishuUnixSeconds(dateText, endOfDay = false) {
+  const suffix = endOfDay ? "T23:59:59+08:00" : "T00:00:00+08:00";
+  return Math.floor(new Date(`${dateText}${suffix}`).getTime() / 1000);
+}
+
+function feishuErrorMessage(message, fallback) {
+  const raw = String(message || "");
+  if (/unavailable or inactive/i.test(raw)) {
+    return "飞书应用在当前企业内不可用或未启用。请确认 .env.local 使用的是当前企业的自建应用 App ID/Secret，并在飞书开放平台发布/启用该应用、把机器人加入 Vision Claw项目群。";
+  }
+  if (/invalid param/i.test(raw)) {
+    return "飞书 App ID 或 App Secret 参数无效。请确认 .env.local 中填写的是飞书开放平台里的真实 App ID 和 App Secret。";
+  }
+  return raw || fallback;
+}
+
+async function getFeishuTenantAccessToken() {
+  if (!FEISHU_APP_ID || !FEISHU_APP_SECRET) {
+    throw new Error("飞书自动读取尚未配置。请在 .env.local 中设置 FEISHU_APP_ID 和 FEISHU_APP_SECRET，并确保应用有读取群消息权限。");
+  }
+  if (feishuTokenCache && feishuTokenCache.expiresAt > Date.now() + 60_000) {
+    return feishuTokenCache.token;
+  }
+  const res = await fetch(`${FEISHU_BASE_URL}/auth/v3/tenant_access_token/internal`, {
+    method: "POST",
+    headers: { "content-type": "application/json; charset=utf-8" },
+    body: JSON.stringify({
+      app_id: FEISHU_APP_ID,
+      app_secret: FEISHU_APP_SECRET
+    })
+  });
+  const data = await res.json();
+  if (!res.ok || data.code !== 0 || !data.tenant_access_token) {
+    throw new Error(feishuErrorMessage(data.msg, "飞书 tenant_access_token 获取失败。"));
+  }
+  feishuTokenCache = {
+    token: data.tenant_access_token,
+    expiresAt: Date.now() + Number(data.expire || 3600) * 1000
+  };
+  return feishuTokenCache.token;
+}
+
+async function feishuApi(pathname, searchParams = {}) {
+  const token = await getFeishuTenantAccessToken();
+  const url = new URL(`${FEISHU_BASE_URL}${pathname}`);
+  for (const [key, value] of Object.entries(searchParams)) {
+    if (value !== undefined && value !== null && value !== "") url.searchParams.set(key, String(value));
+  }
+  const res = await fetch(url, {
+    headers: {
+      authorization: `Bearer ${token}`,
+      "content-type": "application/json; charset=utf-8"
+    }
+  });
+  const data = await res.json();
+  if (!res.ok || data.code !== 0) {
+    throw new Error(feishuErrorMessage(data.msg, `飞书接口调用失败：${pathname}`));
+  }
+  return data.data || {};
+}
+
+async function resolveFeishuChatId(chatName) {
+  if (FEISHU_CHAT_ID) return { chatId: FEISHU_CHAT_ID, chatName: chatName || FEISHU_CHAT_NAME };
+  const expectedName = String(chatName || FEISHU_CHAT_NAME).trim();
+  let pageToken = "";
+  for (let page = 0; page < 20; page++) {
+    const data = await feishuApi("/im/v1/chats", {
+      page_size: 100,
+      page_token: pageToken
+    });
+    const chats = data.items || [];
+    const matched = chats.find((chat) => chat.name === expectedName) ||
+      chats.find((chat) => String(chat.name || "").includes(expectedName));
+    if (matched?.chat_id) return { chatId: matched.chat_id, chatName: matched.name || expectedName };
+    if (!data.has_more || !data.page_token) break;
+    pageToken = data.page_token;
+  }
+  throw new Error(`没有找到飞书群“${expectedName}”。请确认机器人已加入群聊，或在 .env.local 设置 FEISHU_CHAT_ID。`);
+}
+
+function feishuMessageText(message) {
+  const raw = message.body?.content || "";
+  try {
+    const content = JSON.parse(raw);
+    if (typeof content.text === "string") return content.text;
+    if (typeof content.title === "string") return content.title;
+    if (Array.isArray(content.content)) {
+      return content.content.flat().map((node) => node.text || node.name || "").join("");
+    }
+    return Object.values(content).filter((value) => typeof value === "string").join(" ");
+  } catch {
+    return raw;
+  }
+}
+
+async function fetchFeishuGroupMessages(range, chatName) {
+  const chat = await resolveFeishuChatId(chatName);
+  const messages = [];
+  let pageToken = "";
+  for (let page = 0; page < 40; page++) {
+    const data = await feishuApi("/im/v1/messages", {
+      container_id_type: "chat",
+      container_id: chat.chatId,
+      start_time: feishuUnixSeconds(range.start),
+      end_time: feishuUnixSeconds(range.end, true),
+      page_size: 50,
+      page_token: pageToken
+    });
+    for (const item of data.items || []) {
+      const text = feishuMessageText(item).replace(/\s+/g, " ").trim();
+      if (!text) continue;
+      const created = Number(item.create_time || 0);
+      const createdMs = created && created < 1_000_000_000_000 ? created * 1000 : created;
+      const date = createdMs ? new Date(createdMs).toISOString().slice(0, 10) : null;
+      messages.push({ date, text });
+    }
+    if (!data.has_more || !data.page_token) break;
+    pageToken = data.page_token;
+  }
+  return {
+    sourceName: `飞书 ${chat.chatName}`,
+    messages
+  };
+}
+
+function classifyFeishuMessages(messages) {
+  const buckets = {
+    progress: [],
+    risk: [],
+    plan: [],
+    decision: [],
+    other: []
+  };
+  for (const message of messages) {
+    const text = message.text;
+    const entry = message.date ? `${message.date} ${text}` : text;
+    if (/风险|阻塞|延期|卡住|依赖|问题|bug|缺陷|失败|回归|不通过/i.test(text)) buckets.risk.push(entry);
+    else if (/结论|决定|确认|拍板|同意|变更|调整|定版/i.test(text)) buckets.decision.push(entry);
+    else if (/完成|已|进展|提交|合入|发布|提测|验证|联调|修复/i.test(text)) buckets.progress.push(entry);
+    else if (/下周|计划|待办|todo|跟进|推进|安排|准备|需要/i.test(text)) buckets.plan.push(entry);
+    else buckets.other.push(entry);
+  }
+  return buckets;
+}
+
+function compactList(items, maxItems = 8, maxLength = 120) {
+  return items.slice(0, maxItems).map((item) => {
+    const value = String(item || "").replace(/\s+/g, " ").trim();
+    return value.length > maxLength ? `${value.slice(0, maxLength)}...` : value;
+  });
+}
+
+function buildFeishuWeeklyReportModelFromMessages(messages, range, sourceName) {
+  const buckets = classifyFeishuMessages(messages);
+  const progress = compactList([...buckets.progress, ...buckets.decision, ...buckets.other]);
+  const risks = compactList(buckets.risk);
+  const plans = compactList(buckets.plan);
+  const hasContent = messages.length > 0;
+  const status = risks.length ? "存在需跟踪风险" : hasContent ? "本周推进中" : "未识别到本周期消息";
+  const model = {
+    title: "Vision Claw 飞书项目周报",
+    subtitle: `汇报周期：${range.start.replaceAll("-", ".")}-${range.end.replaceAll("-", ".")}｜来源：飞书 Vision Claw项目群`,
+    callout: hasContent
+      ? `管理判断：本周期从飞书 Vision Claw项目群识别 ${messages.length} 条本地消息，重点围绕进展闭环、风险跟踪和下周推进事项整理；生成过程只在本地完成，不写入飞书或其他第三方系统。`
+      : "管理判断：本周期未从输入内容中识别到落在上周五到本周四范围内的飞书消息，请确认导出内容是否包含日期，或补充粘贴本周期群消息。",
+    overviewRows: [
+      ["项目", "本周状态", "管理判断"],
+      ["Vision Claw", status, risks.length ? "建议优先确认风险责任人、截止时间和验收口径。" : "建议继续按本周进展推动节点闭环，并在下周同步关键结果。"]
+    ],
+    sections: []
+  };
+  model.sections.push({
+    heading: "本周关键进展",
+    paragraphs: progress.length ? progress.map((item) => `Vision Claw：${item}`) : ["本周期输入内容中未识别到明确进展项。"]
+  });
+  model.sections.push({
+    heading: "关键风险 / 阻塞",
+    paragraphs: risks.length ? risks.map((item) => `Vision Claw：${item}`) : ["当前输入内容中未识别到明确风险或阻塞；建议人工复核是否存在未显式标注的依赖问题。"]
+  });
+  model.sections.push({
+    heading: "下周计划",
+    paragraphs: plans.length ? plans.map((item) => `Vision Claw：${item}`) : ["基于飞书消息，建议下周继续跟踪本周进展项的闭环结果、风险处理状态和验收反馈。"]
+  });
+  model.sections.push({
+    heading: "需要老板关注或决策",
+    paragraphs: risks.length
+      ? ["请关注上述风险项是否已有明确 owner、解决时点和升级路径；若风险影响版本节点，建议提前明确取舍方案。"]
+      : ["暂无从飞书消息中识别出的明确升级事项；如版本节点临近，建议继续关注验收质量和跨团队依赖。"]
+  });
+  model.sections.push({
+    heading: "来源与口径",
+    paragraphs: [
+      `运行规则：查看飞书“Vision Claw项目群”里过去一周的信息，时间范围固定为上周五到本周四；生成老板版周报草稿，并输出 Word 文件；全程只在本地生成文件，不写入第三方系统。`,
+      `信息来源：${sourceName}；识别消息数：${messages.length}。`
+    ]
+  });
+  return { model, range, sourceName, messages };
+}
+
+async function buildFeishuWeeklyReportModel(input) {
+  const range = feishuWeeklyRange();
+  const localSource = parseLocalFeishuSource(input);
+  if (localSource) {
+    return buildFeishuWeeklyReportModelFromMessages(
+      collectFeishuMessages(localSource.text, range),
+      range,
+      localSource.sourceName
+    );
+  }
+  const remoteSource = await fetchFeishuGroupMessages(range, input.chatName);
+  return buildFeishuWeeklyReportModelFromMessages(remoteSource.messages, range, remoteSource.sourceName);
+}
+
 async function handleApi(req, res) {
   try {
+    const apiPath = req.url.split("?")[0].replace(/\/$/, "");
     if (req.url === "/api/login" && req.method === "POST") {
       const raw = await readBody(req);
       const input = raw ? JSON.parse(raw) : {};
@@ -794,6 +1096,24 @@ async function handleApi(req, res) {
         warning: data.warning,
         weeklyRules,
         sourceSlides: data.slides,
+        savedTo: file,
+        docxSavedTo: docxFile,
+        docxDownloadUrl: `/api/reports/download?name=${encodeURIComponent(path.basename(docxFile))}`
+      });
+    }
+
+    if (apiPath === "/api/feishu-weekly-report" && req.method === "POST") {
+      const { model, range, sourceName, messages } = await buildFeishuWeeklyReportModel(input);
+      const report = formatWeeklyReportPreview(model);
+      const file = path.join(REPORTS_DIR, `${range.start}_${range.end}_feishu-weekly-report.txt`);
+      fs.writeFileSync(file, report);
+      const docxFile = createDocxReport(report, range, sourceName, model, "feishu-weekly-report");
+      return sendJson(res, 200, {
+        ok: true,
+        range,
+        report,
+        sourceName,
+        matchedMessages: messages.length,
         savedTo: file,
         docxSavedTo: docxFile,
         docxDownloadUrl: `/api/reports/download?name=${encodeURIComponent(path.basename(docxFile))}`
@@ -984,7 +1304,9 @@ module.exports = {
   analyzeMigration,
   buildWeeklyReport,
   buildWeeklyReportModel,
+  buildFeishuWeeklyReportModel,
   buildCreateOnesWorkItemsPlan,
+  feishuWeeklyRange,
   formatWeeklyReportPreview,
   dateRange,
   parsePastedItems,

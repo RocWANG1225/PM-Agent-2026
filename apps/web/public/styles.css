@@ -162,6 +162,11 @@ p {
   color: var(--warn);
 }
 
+.local-badge {
+  background: #e7f3ef;
+  color: #096458;
+}
+
 .panel {
   background: var(--panel);
   border: 1px solid var(--line);
@@ -233,6 +238,11 @@ textarea {
 
 .rules-input {
   min-height: 150px;
+  line-height: 1.55;
+}
+
+.message-input {
+  min-height: 220px;
   line-height: 1.55;
 }
 
