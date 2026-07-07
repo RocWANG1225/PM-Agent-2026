@@ -68,6 +68,23 @@ function applyModuleOrder(order) {
   }
 }
 
+function activeModuleId() {
+  const hashId = window.location.hash.slice(1);
+  if (DEFAULT_MODULE_ORDER.includes(hashId)) return hashId;
+  return document.querySelector("nav a.active")?.getAttribute("href")?.slice(1) || DEFAULT_MODULE_ORDER[0];
+}
+
+function showModule(id) {
+  const nextId = DEFAULT_MODULE_ORDER.includes(id) ? id : DEFAULT_MODULE_ORDER[0];
+  document.querySelectorAll("nav a").forEach((link) => {
+    link.classList.toggle("active", link.getAttribute("href") === `#${nextId}`);
+  });
+  DEFAULT_MODULE_ORDER.forEach((moduleId) => {
+    const section = document.getElementById(moduleId);
+    if (section) section.hidden = moduleId !== nextId;
+  });
+}
+
 function currentModuleOrder() {
   return [...document.querySelectorAll(".module-nav-item")]
     .map((item) => item.dataset.moduleId)
@@ -75,9 +92,11 @@ function currentModuleOrder() {
 }
 
 function saveCurrentModuleOrder() {
+  const id = activeModuleId();
   const order = currentModuleOrder();
   saveModuleOrder(order);
   applyModuleOrder(order);
+  showModule(id);
 }
 
 function initModuleOrdering() {
@@ -186,6 +205,20 @@ function initModuleOrdering() {
     if (!draggedItem || activePointerId !== null) return;
     finishDrag();
   });
+}
+
+function initModuleNavigation() {
+  document.querySelectorAll("nav a").forEach((link) => {
+    link.addEventListener("click", (event) => {
+      event.preventDefault();
+      const id = link.getAttribute("href")?.slice(1);
+      if (!id) return;
+      window.history.replaceState(null, "", `#${id}`);
+      showModule(id);
+    });
+  });
+  window.addEventListener("hashchange", () => showModule(activeModuleId()));
+  showModule(activeModuleId());
 }
 
 function formatDateInput(date) {
@@ -376,13 +409,6 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
-document.querySelectorAll("nav a").forEach((link) => {
-  link.addEventListener("click", () => {
-    document.querySelectorAll("nav a").forEach((item) => item.classList.remove("active"));
-    link.classList.add("active");
-  });
-});
-
 document.getElementById("weeklyForm").addEventListener("submit", async (event) => {
   event.preventDefault();
   const output = document.getElementById("weeklyOutput");
@@ -446,6 +472,7 @@ document.getElementById("refreshSpreadsheets").addEventListener("click", loadSpr
 document.getElementById("logoutButton").addEventListener("click", logout);
 document.getElementById("saveWeeklyRules").addEventListener("click", saveWeeklyRules);
 initModuleOrdering();
+initModuleNavigation();
 initWeeklyRules();
 loadCurrentUser();
 loadSpreadsheets();
