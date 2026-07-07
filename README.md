@@ -55,6 +55,18 @@ PM_AGENT_USER=你的账号 PM_AGENT_PASSWORD=你的密码 node apps/api/server.j
 PM_AGENT_MATERIALS_DIR=/你的/表格目录 node apps/api/server.js
 ```
 
+如需让“飞书周报助手”自动读取飞书“Vision Claw项目群”，请在项目根目录创建 `.env.local`，并配置飞书自建应用凭据：
+
+```bash
+FEISHU_APP_ID=cli_xxx
+FEISHU_APP_SECRET=xxx
+FEISHU_CHAT_NAME=Vision Claw项目群
+# 如果群名搜索不到，可直接配置群 ID：
+# FEISHU_CHAT_ID=oc_xxx
+```
+
+飞书应用需要具备读取群聊和读取消息的权限，并且机器人需要加入“Vision Claw项目群”。`start-local.command` 会自动读取 `.env.local`。
+
 ## Docker 部署
 
 ```bash
@@ -68,7 +80,7 @@ Docker 镜像会安装脚本所需的 Python 依赖，并在容器内使用 `pyt
 - ONES 模块当前只做分析，不会移动、保存或提交工作项。
 - 创建 ONES 工作项清单模块当前只保存运行计划，不会直接创建 ONES 工作项。
 - PPT/PDF 文件会上传到本机服务并保存在 `data/uploads/`，只在本地使用。
-- 飞书周报助手当前读取本地粘贴或导出的飞书消息文本，不调用飞书接口，也不会写入飞书或其他第三方系统。
+- 飞书周报助手通过飞书开放 API 读取“Vision Claw项目群”消息，只生成本地 Word 周报，不会写入飞书或其他第三方系统。
 - Word 周报会继承 `templates/weekly-report-template.docx` 的版式。
 - 创建 ONES 工作项清单要求每次手动选择需求表格并输入 ONES 目标迭代。
 - 平台已加入本地账号访问；生产或内网多人使用时请修改默认密码。

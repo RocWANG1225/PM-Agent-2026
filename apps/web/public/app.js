@@ -149,20 +149,6 @@ async function weeklyFormData(form) {
   return values;
 }
 
-async function feishuWeeklyFormData(form) {
-  const values = formData(form);
-  const file = form.elements.sourceFile.files[0];
-  delete values.sourceFile;
-  if (file) {
-    values.sourceName = file.name;
-    values.sourceBase64 = await fileToBase64(file);
-    if (!String(values.feishuMessages || "").trim()) {
-      values.feishuMessages = await fileToText(file);
-    }
-  }
-  return values;
-}
-
 function renderTable(data) {
   if (!data.ok) return `<p>${data.message}</p>`;
   const rows = data.suggestions.map((item) => `
@@ -273,7 +259,7 @@ document.getElementById("feishuWeeklyForm").addEventListener("submit", async (ev
   const output = document.getElementById("feishuWeeklyOutput");
   output.textContent = "正在生成飞书周报...";
   try {
-    const data = await postJson("/api/feishu-weekly-report", await feishuWeeklyFormData(event.currentTarget));
+    const data = await postJson("/api/feishu-weekly-report", formData(event.currentTarget));
     output.innerHTML = `
       <p><a class="download-link" href="${escapeHtml(data.docxDownloadUrl)}">下载 Word 周报</a></p>
       <p>时间范围：${escapeHtml(data.range.start)} 至 ${escapeHtml(data.range.end)}；识别消息：${escapeHtml(data.matchedMessages)} 条。</p>

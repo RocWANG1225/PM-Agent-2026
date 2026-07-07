@@ -1,6 +1,12 @@
 #!/bin/zsh
 cd /Users/wangpeng5/Documents/GitHub/PM-Agent-2026
 
+if [ -f .env.local ]; then
+  set -a
+  source .env.local
+  set +a
+fi
+
 NODE_BIN="/Users/wangpeng5/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node"
 APP_URL="http://localhost:4173"
 

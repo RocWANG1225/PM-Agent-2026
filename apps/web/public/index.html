@@ -82,13 +82,9 @@
           <span class="badge local-badge">本地生成</span>
         </div>
         <form id="feishuWeeklyForm" class="grid-form">
-          <label class="wide">
-            飞书消息文本文件（可选）
-            <input name="sourceFile" type="file" accept=".txt,.md,.csv,.json,text/plain,text/markdown,text/csv,application/json" />
-          </label>
-          <label class="wide">
-            飞书“Vision Claw项目群”消息
-            <textarea name="feishuMessages" class="message-input" placeholder="从飞书 Vision Claw项目群复制过去一周消息，或上传导出的文本文件。"></textarea>
+          <label>
+            飞书群名称
+            <input name="chatName" value="Vision Claw项目群" />
           </label>
           <div class="wide rule-board">
             <h3>固定运行规则</h3>
