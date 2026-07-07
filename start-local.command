@@ -1,5 +1,5 @@
 #!/bin/zsh
-cd /Users/wangpeng5/Documents/Codex/2026-05-06/agent
+cd /Users/wangpeng5/Documents/GitHub/PM-Agent-2026
 
 NODE_BIN="/Users/wangpeng5/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node"
 APP_URL="http://localhost:4173"

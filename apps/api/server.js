@@ -762,6 +762,7 @@ function buildFeishuWeeklyReportModel(input) {
 
 async function handleApi(req, res) {
   try {
+    const apiPath = req.url.split("?")[0].replace(/\/$/, "");
     if (req.url === "/api/login" && req.method === "POST") {
       const raw = await readBody(req);
       const input = raw ? JSON.parse(raw) : {};
@@ -940,7 +941,7 @@ async function handleApi(req, res) {
       });
     }
 
-    if (req.url === "/api/feishu-weekly-report" && req.method === "POST") {
+    if (apiPath === "/api/feishu-weekly-report" && req.method === "POST") {
       const { model, range, sourceName, messages } = buildFeishuWeeklyReportModel(input);
       const report = formatWeeklyReportPreview(model);
       const file = path.join(REPORTS_DIR, `${range.start}_${range.end}_feishu-weekly-report.txt`);
