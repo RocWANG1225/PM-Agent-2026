@@ -11,10 +11,12 @@ const REPORTS_DIR = path.join(ROOT, "data/reports");
 const UPLOADS_DIR = path.join(ROOT, "data/uploads");
 const AUTH_DIR = path.join(ROOT, "data/auth");
 const WEBAUTHN_FILE = path.join(AUTH_DIR, "webauthn-credentials.json");
-const MATERIALS_DIR = "/Users/wangpeng5/Downloads/Codex Materials";
+const DEFAULT_MATERIALS_DIR = "/Users/wangpeng5/Downloads/Codex Materials";
+const BUNDLED_PYTHON_BIN = "/Users/wangpeng5/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3";
+const MATERIALS_DIR = process.env.PM_AGENT_MATERIALS_DIR || DEFAULT_MATERIALS_DIR;
 const PORT = Number(process.env.PORT || 4173);
 const HOST = process.env.HOST || "127.0.0.1";
-const PYTHON_BIN = process.env.PYTHON_BIN || "/Users/wangpeng5/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3";
+const PYTHON_BIN = process.env.PYTHON_BIN || (fs.existsSync(BUNDLED_PYTHON_BIN) ? BUNDLED_PYTHON_BIN : "python3");
 const AUTH_USER = process.env.PM_AGENT_USER || "wangpeng5";
 const AUTH_PASSWORD = process.env.PM_AGENT_PASSWORD || "pm-agent-2026";
 const SESSION_TTL_MS = 8 * 60 * 60 * 1000;
@@ -123,11 +125,11 @@ function redirectToLogin(res) {
 function redirectToLocalhost(req, res) {
   const host = String(req.headers.host || "");
   if (!host.startsWith("127.0.0.1:") && !host.startsWith("[::1]:")) return false;
+  const port = host.split(":").pop() || PORT;
   if (req.method !== "GET") {
-    sendJson(res, 409, { ok: false, message: "Touch ID 需要使用 http://localhost:4173 访问，请刷新到 localhost 后重试。" });
+    sendJson(res, 409, { ok: false, message: `Touch ID 需要使用 http://localhost:${port} 访问，请刷新到 localhost 后重试。` });
     return true;
   }
-  const port = host.split(":").pop() || PORT;
   res.writeHead(302, {
     location: `http://localhost:${port}${req.url}`,
     "cache-control": "no-store"
@@ -362,7 +364,7 @@ function webauthnLoginOptions(req, username) {
 
 function safeJoin(base, target) {
   const resolved = path.resolve(base, target || "index.html");
-  if (!resolved.startsWith(base)) return null;
+  if (resolved !== base && !resolved.startsWith(`${base}${path.sep}`)) return null;
   return resolved;
 }
 
@@ -700,6 +702,9 @@ async function handleApi(req, res) {
       verify.end();
       const publicKey = crypto.createPublicKey({ key: credential.publicKeyJwk, format: "jwk" });
       if (!verify.verify(publicKey, signature)) throw new Error("Touch ID 签名验证失败。");
+      if (credential.signCount && parsed.signCount && parsed.signCount <= credential.signCount) {
+        throw new Error("Touch ID 计数异常，请重新绑定后再试。");
+      }
       credential.signCount = parsed.signCount;
       credential.lastUsedAt = new Date().toISOString();
       credentials[username] = credential;

@@ -48,11 +48,19 @@ Touch ID 需要使用支持 WebAuthn 的浏览器，例如 Safari 或 Chrome，�
 PM_AGENT_USER=你的账号 PM_AGENT_PASSWORD=你的密码 node apps/api/server.js
 ```
 
+如需修改“创建 ONES 工作项清单”读取表格的固定目录，可设置：
+
+```bash
+PM_AGENT_MATERIALS_DIR=/你的/表格目录 node apps/api/server.js
+```
+
 ## Docker 部署
 
 ```bash
 docker compose -f deploy/docker-compose.yml up --build
 ```
+
+Docker 镜像会安装脚本所需的 Python 依赖，并在容器内使用 `python3` 执行周报和 ONES 清单分析脚本。容器默认监听 `0.0.0.0:4173`。
 
 ## 安全边界
 

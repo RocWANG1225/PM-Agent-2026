@@ -1,0 +1,12 @@
+.DS_Store
+__pycache__/
+*.py[cod]
+
+data/auth/
+data/reports/
+data/runs/
+data/uploads/
+!data/.gitkeep
+
+node_modules/
+npm-debug.log*
