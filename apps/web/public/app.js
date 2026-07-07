@@ -36,9 +36,64 @@ async function logout() {
 }
 
 const WEEKLY_RULES_STORAGE_KEY = "pmAgent.weeklyRules.saved.v2";
+const MODULE_ORDER_STORAGE_KEY = "pmAgent.moduleOrder.v1";
+const DEFAULT_MODULE_ORDER = ["weekly", "feishu-weekly", "automation", "ones"];
 
 function formData(form) {
   return Object.fromEntries(new FormData(form).entries());
+}
+
+function savedModuleOrder() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(MODULE_ORDER_STORAGE_KEY) || "[]");
+    const valid = parsed.filter((id) => DEFAULT_MODULE_ORDER.includes(id));
+    return [...valid, ...DEFAULT_MODULE_ORDER.filter((id) => !valid.includes(id))];
+  } catch {
+    return DEFAULT_MODULE_ORDER;
+  }
+}
+
+function saveModuleOrder(order) {
+  localStorage.setItem(MODULE_ORDER_STORAGE_KEY, JSON.stringify(order));
+}
+
+function applyModuleOrder(order) {
+  const nav = document.getElementById("moduleNav");
+  const main = document.querySelector("main");
+  for (const id of order) {
+    const navItem = nav?.querySelector(`[data-module-id="${id}"]`);
+    const section = document.getElementById(id);
+    if (navItem) nav.appendChild(navItem);
+    if (section) main.appendChild(section);
+  }
+  updateModuleOrderControls(order);
+}
+
+function updateModuleOrderControls(order) {
+  for (const [index, id] of order.entries()) {
+    const item = document.querySelector(`[data-module-id="${id}"]`);
+    item?.querySelector(".move-up")?.toggleAttribute("disabled", index === 0);
+    item?.querySelector(".move-down")?.toggleAttribute("disabled", index === order.length - 1);
+  }
+}
+
+function moveModule(id, direction) {
+  const order = savedModuleOrder();
+  const index = order.indexOf(id);
+  const target = index + direction;
+  if (index < 0 || target < 0 || target >= order.length) return;
+  [order[index], order[target]] = [order[target], order[index]];
+  saveModuleOrder(order);
+  applyModuleOrder(order);
+}
+
+function initModuleOrdering() {
+  applyModuleOrder(savedModuleOrder());
+  document.querySelectorAll(".module-nav-item").forEach((item) => {
+    const id = item.dataset.moduleId;
+    item.querySelector(".move-up")?.addEventListener("click", () => moveModule(id, -1));
+    item.querySelector(".move-down")?.addEventListener("click", () => moveModule(id, 1));
+  });
 }
 
 function formatDateInput(date) {
@@ -298,6 +353,7 @@ document.getElementById("automationForm").addEventListener("submit", async (even
 document.getElementById("refreshSpreadsheets").addEventListener("click", loadSpreadsheets);
 document.getElementById("logoutButton").addEventListener("click", logout);
 document.getElementById("saveWeeklyRules").addEventListener("click", saveWeeklyRules);
+initModuleOrdering();
 initWeeklyRules();
 loadCurrentUser();
 loadSpreadsheets();
