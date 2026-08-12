@@ -26,7 +26,93 @@ const FEISHU_APP_SECRET = process.env.FEISHU_APP_SECRET || process.env.LARK_APP_
 const FEISHU_CHAT_ID = process.env.FEISHU_CHAT_ID || "";
 const FEISHU_CHAT_NAME = process.env.FEISHU_CHAT_NAME || "Vision Claw项目群";
 const FEISHU_BASE_URL = "https://open.feishu.cn/open-apis";
+const LOGS_DIR = path.join(ROOT, "data", "logs");
 const SESSION_TTL_MS = 8 * 60 * 60 * 1000;
+const LOG_MAX_AGE_DAYS = 30;
+
+const logWriters = new Map();
+
+function logDateStamp() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function logTimestamp() {
+  return new Date().toISOString();
+}
+
+function logFilePath() {
+  return path.join(LOGS_DIR, `${logDateStamp()}.log`);
+}
+
+function writeLogLine(line) {
+  const stamp = logFilePath();
+  let writer = logWriters.get(stamp);
+  if (!writer) {
+    writer = fs.createWriteStream(stamp, { flags: "a" });
+    logWriters.set(stamp, writer);
+    // 清理过期日志文件
+    cleanOldLogs();
+  }
+  writer.write(line + "\n");
+}
+
+function cleanOldLogs() {
+  if (!fs.existsSync(LOGS_DIR)) return;
+  const files = fs.readdirSync(LOGS_DIR).filter(name => /^\d{4}-\d{2}-\d{2}\.log$/.test(name));
+  const now = Date.now();
+  const maxAgeMs = LOG_MAX_AGE_DAYS * 24 * 60 * 60 * 1000;
+  for (const name of files) {
+    const file = path.join(LOGS_DIR, name);
+    const stat = fs.statSync(file);
+    if (now - stat.mtimeMs > maxAgeMs) {
+      fs.unlinkSync(file);
+    }
+  }
+}
+
+function log(level, message, meta = {}) {
+  try {
+    const entry = {
+      timestamp: logTimestamp(),
+      level,
+      message,
+      ...meta
+    };
+    writeLogLine(JSON.stringify(entry));
+  } catch {
+    // 日志失败不应影响业务
+  }
+}
+
+function logError(message, error, meta = {}) {
+  log("ERROR", message, {
+    errorName: error?.name,
+    errorMessage: error?.message,
+    errorStack: error?.stack?.split("\n").slice(0, 5).join(" | "),
+    ...meta
+  });
+}
+
+function logWarn(message, meta = {}) {
+  log("WARN", message, meta);
+}
+
+function logInfo(message, meta = {}) {
+  log("INFO", message, meta);
+}
+
+function getLogFiles() {
+  if (!fs.existsSync(LOGS_DIR)) return [];
+  return fs.readdirSync(LOGS_DIR)
+    .filter(name => /^\d{4}-\d{2}-\d{2}\.log$/.test(name))
+    .sort().reverse()
+    .slice(0, 14)
+    .map(name => {
+      const file = path.join(LOGS_DIR, name);
+      const stat = fs.statSync(file);
+      return { name, size: stat.size, updatedAt: stat.mtime.toISOString() };
+    });
+}
 const DEFAULT_WEEKLY_RULES = `1. 只筛选文本中包含“议题”的页面。
 2. 页面中出现的开始日期=“系统当前日期的上一个周五”。
 3. 页面中出现的截止日期=“系统当前日期的本周四”。
@@ -58,6 +144,7 @@ fs.mkdirSync(RUNS_DIR, { recursive: true });
 fs.mkdirSync(REPORTS_DIR, { recursive: true });
 fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 fs.mkdirSync(AUTH_DIR, { recursive: true });
+fs.mkdirSync(LOGS_DIR, { recursive: true });
 
 function sendJson(res, status, body) {
   res.writeHead(status, {
@@ -535,9 +622,11 @@ function createDocxReport(report, range, sourceName, model, name = "weekly-repor
     maxBuffer: 10_000_000
   });
   if (result.status !== 0) {
-    throw new Error(result.stderr || "Word 周报生成失败。");
+    logError("report_to_docx.py 执行失败", new Error(result.stderr || "unknown"), { script: "report_to_docx.py", inputFile, docxFile, status: result.status });
+  throw new Error(result.stderr || "Word 周报生成失败。");
   }
-  if (!fs.existsSync(docxFile) || fs.statSync(docxFile).size < 10_000) {
+    if (!fs.existsSync(docxFile) || fs.statSync(docxFile).size < 10_000) {
+  logError("Word 文件内容异常", null, { docxFile, size: fs.existsSync(docxFile) ? fs.statSync(docxFile).size : 0 });
     throw new Error("Word 周报生成失败：文件内容异常。");
   }
   return docxFile;
@@ -595,7 +684,8 @@ function buildCreateOnesWorkItemsPlan(input) {
     maxBuffer: 10_000_000
   });
   if (result.status !== 0) {
-    throw new Error(result.stderr || "创建 ONES 工作项清单分析失败。");
+    logError("analyze_ones_workitems.py 执行失败", new Error(result.stderr || "unknown"), { script: "analyze_ones_workitems.py", spreadsheetPath, targetIteration, status: result.status });
+  throw new Error(result.stderr || "创建 ONES 工作项清单分析失败。");
   }
   const analysis = JSON.parse(fs.readFileSync(analysisFile, "utf-8"));
   const targetExistingRule = analysis.targetExistingItemsProvided
@@ -1075,10 +1165,17 @@ async function handleApi(req, res) {
       const weeklyRules = parseWeeklyRules(input.weeklyRules);
       const result = spawnSync(PYTHON_BIN, [path.join(ROOT, "scripts/extract_pptx_weekly.py"), pptxPath, range.start, range.end, weeklyRules.keyword], {
         encoding: "utf-8",
-        maxBuffer: 10_000_000
+        maxBuffer: 10_000_000,
+      timeout: 60_000
       });
-      if (result.status !== 0) {
-        return sendJson(res, 500, { ok: false, message: result.stderr || "PPT 解析失败。" });
+        if (result.status !== 0) {
+      const errMsg = result.stderr || "PPT 解析失败。";
+      const isTimeout = result.signal === "SIGTERM";
+        logError("extract_pptx_weekly.py 执行失败", new Error(errMsg), { script: "extract_pptx_weekly.py", sourceFile: pptxPath, range, status: result.status, signal: result.signal, timeout: isTimeout });
+        if (isTimeout) {
+          return sendJson(res, 500, { ok: false, message: "文件解析超时（60秒），请确认文件是否过大或损坏。" });
+        }
+        return sendJson(res, 500, { ok: false, message: errMsg });
       }
       const data = JSON.parse(result.stdout);
       if (path.extname(pptxPath).toLowerCase() === ".pdf" && !data.slides.length) {
@@ -1120,8 +1217,28 @@ async function handleApi(req, res) {
       });
     }
 
-    if (req.url === "/api/ones/analyze" && req.method === "POST") {
-      const analysis = analyzeMigration(input);
+    if (apiPath === "/api/logs" && req.method === "GET") {
+      const files = getLogFiles();
+        return sendJson(res, 200, { ok: true, files });
+      }
+
+      if (apiPath === "/api/logs/view" && req.method === "GET") {
+        const parsed = new URL(req.url, `http://${req.headers.host || "localhost"}`);
+        const name = path.basename(parsed.searchParams.get("name") || "");
+        if (!/^\d{4}-\d{2}-\d{2}\.log$/.test(name)) {
+          return sendJson(res, 400, { ok: false, message: "无效的日志文件名。" });
+        }
+        const file = path.join(LOGS_DIR, name);
+        if (!fs.existsSync(file)) {
+          return sendJson(res, 404, { ok: false, message: "日志文件不存在。" });
+        }
+        const lines = fs.readFileSync(file, "utf-8").trim().split("\n").slice(-200);
+        const entries = lines.map(line => { try { return JSON.parse(line); } catch { return { raw: line }; } });
+        return sendJson(res, 200, { ok: true, name, entries });
+      }
+
+      if (req.url === "/api/ones/analyze" && req.method === "POST") {
+        const analysis = analyzeMigration(input);
       const savedTo = saveRun("ones-analysis", { input, analysis });
       return sendJson(res, analysis.ok ? 200 : 400, { ...analysis, savedTo });
     }
@@ -1134,7 +1251,8 @@ async function handleApi(req, res) {
 
     sendJson(res, 404, { ok: false, message: "API not found." });
   } catch (error) {
-    sendJson(res, 500, { ok: false, message: error.message });
+    logError("API 请求异常", error, { method: req.method, url: req.url });
+  sendJson(res, 500, { ok: false, message: error.message });
   }
 }
 
@@ -1297,7 +1415,12 @@ const server = http.createServer((req, res) => {
 if (require.main === module) {
   server.listen(PORT, HOST, () => {
     console.log(`PM Agent Platform running at http://${HOST}:${PORT}`);
+    logInfo("服务启动", { host: HOST, port: PORT });
   });
+  process.on("SIGINT", () => { logInfo("服务停止（SIGINT）"); process.exit(0); });
+  process.on("SIGTERM", () => { logInfo("服务停止（SIGTERM）"); process.exit(0); });
+  process.on("uncaughtException", (error) => { logError("uncaughtException", error); });
+  process.on("unhandledRejection", (reason) => { logError("unhandledRejection", reason instanceof Error ? reason : new Error(String(reason))); });
 }
 
 module.exports = {

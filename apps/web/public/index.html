@@ -32,6 +32,10 @@
           <button type="button" class="drag-handle" title="拖拽排序" aria-label="拖拽排序">☰</button>
           <a href="#ones">ONES 工作项迁移</a>
         </div>
+      <div class="module-nav-item" data-module-id="logs">
+          <button type="button" class="drag-handle" title="拖拽排序" aria-label="拖拽排序">☰</button>
+          <a href="#logs">系统日志</a>
+        </div>
       </nav>
     </aside>
 
@@ -188,6 +192,36 @@
           <button type="submit">生成建议清单</button>
         </form>
         <div id="onesOutput" class="table-wrap">等待分析。</div>
+      </section>
+
+      <section id="logs" class="panel">
+        <div class="section-head">
+          <div>
+            <h2>系统日志</h2>
+            <p>查看服务运行日志，按日期和级别筛选。仅显示最近 14 天的日志文件，每个文件最多加载最后 200 条记录。</p>
+          </div>
+          <button type="button" class="secondary-button" id="refreshLogs">刷新</button>
+        </div>
+        <div class="logs-toolbar">
+          <label class="logs-file-label">
+            日志文件
+            <select id="logFileSelect"><option value="">请先加载...</option></select>
+          </label>
+          <label class="logs-level-label">
+            级别筛选
+            <select id="logLevelFilter">
+              <option value="">全部</option>
+              <option value="ERROR">ERROR</option>
+              <option value="WARN">WARN</option>
+              <option value="INFO">INFO</option>
+            </select>
+          </label>
+          <label class="logs-search-label">
+            关键词
+            <input id="logSearchInput" type="search" placeholder="搜索消息内容..." />
+          </label>
+        </div>
+        <div id="logsOutput" class="logs-output">等待加载。</div>
       </section>
     </main>
 

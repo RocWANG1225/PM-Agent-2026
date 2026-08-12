@@ -6,6 +6,7 @@ data/auth/
 data/reports/
 data/runs/
 data/uploads/
+data/logs/
 !data/.gitkeep
 
 node_modules/

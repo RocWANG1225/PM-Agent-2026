@@ -37,7 +37,7 @@ async function logout() {
 
 const WEEKLY_RULES_STORAGE_KEY = "pmAgent.weeklyRules.saved.v2";
 const MODULE_ORDER_STORAGE_KEY = "pmAgent.moduleOrder.v1";
-const DEFAULT_MODULE_ORDER = ["weekly", "feishu-weekly", "automation", "ones"];
+const DEFAULT_MODULE_ORDER = ["weekly", "feishu-weekly", "automation", "ones", "logs"];
 
 function formData(form) {
   return Object.fromEntries(new FormData(form).entries());
@@ -471,8 +471,128 @@ document.getElementById("automationForm").addEventListener("submit", async (even
 document.getElementById("refreshSpreadsheets").addEventListener("click", loadSpreadsheets);
 document.getElementById("logoutButton").addEventListener("click", logout);
 document.getElementById("saveWeeklyRules").addEventListener("click", saveWeeklyRules);
+
+// ─── 日志查看 ───
+
+let logEntries = [];
+
+function formatLogSize(bytes) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function formatLogTime(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  return d.toLocaleTimeString("zh-CN", { hour12: false }) + "." + String(d.getMilliseconds()).padStart(3, "0");
+}
+
+function levelClass(level) {
+  if (level === "ERROR") return "log-level-error";
+  if (level === "WARN") return "log-level-warn";
+  return "log-level-info";
+}
+
+function renderLogEntry(entry) {
+  const time = formatLogTime(entry.timestamp);
+  const level = entry.level || "?";
+  const msg = escapeHtml(entry.message || entry.raw || "");
+  const meta = Object.entries(entry)
+    .filter(([k]) => !["timestamp", "level", "message", "raw"].includes(k))
+    .map(([k, v]) => `<span class="log-meta-field"><b>${escapeHtml(k)}</b>: ${escapeHtml(String(v))}</span>`)
+    .join(" ");
+  return `<div class="log-entry ${levelClass(level)}">
+    <span class="log-time">${escapeHtml(time)}</span>
+    <span class="log-level">${escapeHtml(level)}</span>
+    <span class="log-message">${msg}</span>
+    ${meta ? `<div class="log-meta">${meta}</div>` : ""}
+  </div>`;
+}
+
+function filterLogEntries() {
+  const level = document.getElementById("logLevelFilter")?.value || "";
+  const search = (document.getElementById("logSearchInput")?.value || "").trim().toLowerCase();
+  return logEntries.filter((entry) => {
+    if (level && entry.level !== level) return false;
+    if (search) {
+      const text = JSON.stringify(entry).toLowerCase();
+      if (!text.includes(search)) return false;
+    }
+    return true;
+  });
+}
+
+function renderLogs() {
+  const output = document.getElementById("logsOutput");
+  if (!output) return;
+  const filtered = filterLogEntries();
+  if (!filtered.length) {
+    output.innerHTML = `<p class="log-empty">${logEntries.length ? "没有匹配的日志记录。" : "暂无日志记录。"}</p>`;
+    return;
+  }
+  const errorCount = filtered.filter((e) => e.level === "ERROR").length;
+  const warnCount = filtered.filter((e) => e.level === "WARN").length;
+  const infoCount = filtered.filter((e) => e.level === "INFO").length;
+  output.innerHTML = `<div class="log-summary">
+    <span class="log-level-info">INFO ${infoCount}</span>
+    <span class="log-level-warn">WARN ${warnCount}</span>
+    <span class="log-level-error">ERROR ${errorCount}</span>
+    <span class="log-total">共 ${filtered.length} 条</span>
+  </div>` + filtered.map(renderLogEntry).join("");
+}
+
+async function loadLogFiles() {
+  const select = document.getElementById("logFileSelect");
+  if (!select) return;
+  select.innerHTML = "<option value=''>加载中...</option>";
+  try {
+    const data = await getJson("/api/logs");
+    if (!data.files.length) {
+      select.innerHTML = "<option value=''>暂无日志文件</option>";
+      return;
+    }
+    select.innerHTML = data.files.map((f) =>
+      `<option value="${escapeHtml(f.name)}">${escapeHtml(f.name)} (${formatLogSize(f.size)})</option>`
+    ).join("");
+    select.selectedIndex = 0;
+    loadLogContent(data.files[0].name);
+  } catch (error) {
+    select.innerHTML = `<option value="">加载失败：${escapeHtml(error.message)}</option>`;
+  }
+}
+
+async function loadLogContent(name) {
+  const output = document.getElementById("logsOutput");
+  if (!output) return;
+  output.textContent = "正在加载日志...";
+  try {
+    const data = await getJson(`/api/logs/view?name=${encodeURIComponent(name)}`);
+    logEntries = data.entries || [];
+    renderLogs();
+  } catch (error) {
+    logEntries = [];
+    output.textContent = `加载失败：${error.message}`;
+  }
+}
+
+function initLogs() {
+  const select = document.getElementById("logFileSelect");
+  const levelFilter = document.getElementById("logLevelFilter");
+  const searchInput = document.getElementById("logSearchInput");
+  const refreshBtn = document.getElementById("refreshLogs");
+  select?.addEventListener("change", () => {
+    if (select.value) loadLogContent(select.value);
+  });
+  levelFilter?.addEventListener("change", renderLogs);
+  searchInput?.addEventListener("input", renderLogs);
+  refreshBtn?.addEventListener("click", loadLogFiles);
+  loadLogFiles();
+}
+
 initModuleOrdering();
 initModuleNavigation();
 initWeeklyRules();
+initLogs();
 loadCurrentUser();
 loadSpreadsheets();
